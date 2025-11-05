@@ -1,6 +1,6 @@
 # Khukuri Virtual Lab
 
-Production-ready AI-powered drug discovery platform with modular architecture.
+AI-powered drug discovery platform with modular architecture.
 
 ## Features
 
