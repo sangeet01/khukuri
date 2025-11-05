@@ -1,0 +1,43 @@
+scoring:
+  weights:
+    binding_affinity: 0.4
+    drug_likeness: 0.25
+    synthetic_accessibility: 0.15
+    toxicity_risk: 0.1
+    pharmacokinetic_profile: 0.1
+  
+  thresholds:
+    binding_affinity_cutoff: -5.0
+    lipinski_violations_max: 1
+    qed_min: 0.5
+    sa_max: 6.0
+    toxicity_alerts_max: 2
+    bbb_min: 0.3
+    logp_range: [-2, 5]
+    tpsa_max: 140
+    hbd_max: 5
+    hba_max: 10
+
+docking:
+  exhaustiveness: 8
+  box_size: [40, 40, 40]
+  num_modes: 10
+  energy_range: 3
+  cpu: 4
+
+target_discovery:
+  max_targets: 20
+  confidence_threshold: 0.4
+  min_centrality: 0.1
+  ppi_score_cutoff: 0.4
+
+molecule_design:
+  max_compounds: 100
+  min_atoms: 5
+  max_atoms: 50
+  diversity_threshold: 0.3
+
+resistance:
+  simulation_generations: 100
+  mutation_rate: 1e-7
+  fitness_threshold: 0.8

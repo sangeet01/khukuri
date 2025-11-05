@@ -1,0 +1,49 @@
+# Core dependencies
+rdkit>=2022.09.1
+numpy>=1.21.0
+pandas>=1.3.0
+scipy>=1.7.0
+
+# Network analysis
+networkx>=2.6.0
+python-louvain>=0.16
+
+# Bioinformatics
+biopython>=1.79
+
+# Web requests
+requests>=2.26.0
+beautifulsoup4>=4.10.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional - AI agents
+openai>=1.0.0
+
+# Optional - Visualization
+py3Dmol>=2.0.0
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# Development dependencies
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=3.0.0
+pytest-mock>=3.6.0
+
+# Code quality
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.950
+pylint>=2.13.0
+
+# Documentation
+sphinx>=4.5.0
+sphinx-rtd-theme>=1.0.0
+
+# Jupyter
+jupyter>=1.0.0
+ipykernel>=6.9.0
+

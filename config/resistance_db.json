@@ -1,0 +1,29 @@
+{
+  "bacterial": {
+    "gyrA": ["S83L", "D87N", "D87G"],
+    "gyrB": ["D426N", "K447E"],
+    "parC": ["S80I", "E84K"],
+    "parE": ["S458A", "D420N"],
+    "rpoB": ["S531L", "H526Y", "D516V"],
+    "mecA": ["insertion"],
+    "vanA": ["gene_acquisition"],
+    "blaZ": ["overexpression"],
+    "ermC": ["methylation"]
+  },
+  "parasitic": {
+    "pfcrt": ["K76T", "C72S", "M74I"],
+    "pfmdr1": ["N86Y", "Y184F", "D1246Y"],
+    "kelch13": ["C580Y", "R539T", "I543T"],
+    "dhfr": ["S108N", "N51I", "C59R"],
+    "dhps": ["S436A", "A437G", "K540E"],
+    "tubulin": ["F200Y", "E198A"],
+    "acetylcholine_receptor": ["L256F", "T280I"]
+  },
+  "fungal": {
+    "cyp51": ["G464S", "Y132F", "K143R"],
+    "fks1": ["S645P", "S645F", "F641S"],
+    "erg11": ["Y132F", "G464S"],
+    "mdr1": ["overexpression"],
+    "cdr1": ["overexpression"]
+  }
+}

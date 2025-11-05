@@ -1,0 +1,31 @@
+# Scoring weights for different drug discovery scenarios
+
+default:
+  binding_affinity: 0.40
+  drug_likeness: 0.25
+  synthetic_accessibility: 0.15
+  resistance_score: 0.20
+
+high_affinity_focus:
+  binding_affinity: 0.60
+  drug_likeness: 0.20
+  synthetic_accessibility: 0.10
+  resistance_score: 0.10
+
+drug_likeness_focus:
+  binding_affinity: 0.25
+  drug_likeness: 0.50
+  synthetic_accessibility: 0.15
+  resistance_score: 0.10
+
+synthesis_focus:
+  binding_affinity: 0.30
+  drug_likeness: 0.20
+  synthetic_accessibility: 0.40
+  resistance_score: 0.10
+
+resistance_focus:
+  binding_affinity: 0.30
+  drug_likeness: 0.20
+  synthetic_accessibility: 0.10
+  resistance_score: 0.40

@@ -1,0 +1,59 @@
+# Configuration for automated data sources
+
+update_schedule:
+  frequency: daily
+  time: "02:00"  # 2 AM
+  retry_on_failure: true
+  max_retries: 3
+
+data_sources:
+  resistance_mutations:
+    enabled: true
+    primary: "https://card.mcmaster.ca/latest/data"
+    fallback: "pubmed"
+    cache_days: 7
+    
+  drug_targets:
+    enabled: true
+    sources:
+      - name: "ChEMBL"
+        url: "https://www.ebi.ac.uk/chembl/api/data/target.json"
+        limit: 100
+      - name: "DrugBank"
+        url: "https://go.drugbank.com/releases/latest"
+        requires_api_key: true
+    
+  clinical_trials:
+    enabled: true
+    source: "https://clinicaltrials.gov/api/query/study_fields"
+    filters:
+      - "drug discovery"
+      - "antimicrobial"
+      - "antibiotic"
+    max_results: 100
+    
+  pdb_structures:
+    enabled: true
+    source: "https://www.rcsb.org/pdb/rest/getCurrent"
+    max_entries: 50
+    
+  pubmed_papers:
+    enabled: true
+    source: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    queries:
+      - "antimicrobial resistance mutations"
+      - "drug target discovery"
+      - "novel antibiotics"
+    max_per_query: 20
+
+storage:
+  format: json
+  compression: false
+  backup_old_data: true
+  backup_days: 30
+
+notifications:
+  enabled: false
+  email: null
+  on_failure: true
+  on_success: false
