@@ -39,25 +39,7 @@ python scripts/quick_test.py
 python -m pytest tests/ -v
 ```
 
-## Project Structure
 
-```
-khukuri/
-├── src/                    # Source code (9 modules, 39 files)
-│   ├── core/              # Logging, validation, scoring
-│   ├── target_discovery/  # Network analysis, target ranking
-│   ├── molecule_design/   # Generation, optimization
-│   ├── docking/           # Vina wrapper, pose analysis
-│   ├── admet/             # Properties, toxicity, PK/PD
-│   ├── resistance/        # Prediction, multi-target
-│   ├── synthesis/         # Retrosynthesis, SA scoring
-│   ├── agents/            # AI agents, orchestrator
-│   └── workflows/         # End-to-end pipelines
-├── tests/                 # Test suite (13 files)
-├── config/                # Configuration files
-├── scripts/               # Automation scripts
-└── examples/              # Usage examples
-```
 
 ## Usage Example
 
