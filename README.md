@@ -1,6 +1,6 @@
 # Khukuri Virtual Lab
 
-Production-ready AI-powered drug discovery platform with modular architecture.
+AI-powered drug discovery platform with modular architecture.
 
 ## Features
 
@@ -81,11 +81,8 @@ results = run_autonomous_discovery(
 - PyYAML >= 6.0
 - Requests >= 2.26.0
 - python-louvain >= 0.16
-- OpenAI >= 1.0.0 (optional)
+- OpenAI >= 1.0.0
 
-## Status
-
-✅ **Production-ready**: 70+ files, ~3,500 lines of code, 0% mocks, 0% duplication
 
 ## License
 
