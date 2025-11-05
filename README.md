@@ -63,7 +63,7 @@ results = run_autonomous_discovery(
 - PyYAML >= 6.0
 - Requests >= 2.26.0
 - python-louvain >= 0.16
-- OpenAI >= 1.0.0 (optional)
+- OpenAI >= 1.0.0 
 
 
 ## License
