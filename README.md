@@ -83,10 +83,7 @@ results = run_autonomous_discovery(
 - python-louvain >= 0.16
 - OpenAI >= 1.0.0 (optional)
 
-## Status
 
-✅ **Production-ready**: 70+ files, ~3,500 lines of code, 0% mocks, 0% duplication
+Authors: Bipin Gyawali and Sangeet Sharma
 
-## License
 
-MIT License
