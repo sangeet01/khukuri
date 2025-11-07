@@ -1,0 +1,92 @@
+# AMR-specific configuration
+
+amr_discovery:
+  default_pathogen: "Mycobacterium tuberculosis"
+  priority_level: "critical"
+  n_compounds_per_iteration: 20
+  n_iterations: 3
+  
+bioknowledge:
+  resistance_db_path: "config/resistance_db.json"
+  update_interval_days: 30
+  sources:
+    - "CARD"
+    - "ResFinder"
+    - "MEGARes"
+
+genomics:
+  mutation_frequency_threshold: 0.1
+  fitness_cost_threshold: 0.2
+  evolution_generations: 100
+  
+microbiology:
+  mic_breakpoints:
+    rifampicin:
+      susceptible: 1.0
+      resistant: 4.0
+    isoniazid:
+      susceptible: 0.2
+      resistant: 1.0
+    ciprofloxacin:
+      susceptible: 1.0
+      resistant: 4.0
+    vancomycin:
+      susceptible: 4.0
+      resistant: 16.0
+    meropenem:
+      susceptible: 2.0
+      resistant: 8.0
+  
+  reference_strains:
+    - "ATCC_25923"  # S. aureus
+    - "ATCC_25922"  # E. coli
+    - "ATCC_BAA-1556"  # MRSA
+    - "ATCC_BAA-2452"  # K. pneumoniae NDM-1
+
+world_model:
+  state_history_limit: 1000
+  auto_export: true
+  export_interval: 100
+  
+learning_loop:
+  acquisition_function: "UCB"
+  exploration_weight: 2.0
+  min_observations: 5
+  
+agents:
+  use_ai: false  # Set to true with OpenAI API key
+  temperature: 0.7
+  max_tokens: 500
+  model: "gpt-3.5-turbo"
+  
+  roles:
+    - "Microbiologist"
+    - "Genomics Specialist"
+    - "Cheminformatics Specialist"
+    - "Resistance Critic"
+    - "Literature Analyst"
+
+resistance_prediction:
+  mechanisms:
+    - "target_alteration"
+    - "antibiotic_inactivation"
+    - "efflux_pump"
+    - "reduced_permeability"
+  
+  risk_thresholds:
+    low: 0.3
+    medium: 0.6
+    high: 0.8
+
+multi_target_strategy:
+  min_targets: 2
+  max_targets: 4
+  synergy_bonus: 0.3
+  
+prioritization:
+  weights:
+    binding_affinity: 0.25
+    drug_likeness: 0.20
+    resistance_score: 0.30
+    synthetic_accessibility: 0.15
+    multi_target_bonus: 0.10

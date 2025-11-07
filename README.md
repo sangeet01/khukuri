@@ -1,16 +1,23 @@
-# Khukuri Virtual Lab
+# Khukuri Virtual Lab v2.0
 
-AI-powered drug discovery platform with modular architecture.
+Production-grade AMR-focused drug discovery platform with autonomous AI agents.
 
 ## Features
 
+### Core Modules
 - **Target Discovery**: PPI network analysis, target ranking, literature mining
 - **Molecule Design**: AI-powered generation, property optimization, fragment-based design
 - **Molecular Docking**: AutoDock Vina integration, binding site detection, pose analysis
 - **ADMET Prediction**: Drug-likeness, toxicity, pharmacokinetics
 - **Resistance Prediction**: Multi-target strategies, evolution simulation
 - **Retrosynthesis**: Route planning, synthetic accessibility scoring
-- **Multi-Agent System**: AI agents for autonomous drug discovery workflows
+
+### NEW: AMR-Specific Features
+- **Bio-Knowledge Layer**: CARD/ResFinder/MEGARes integration, pathogen database, target proteins
+- **Genomics Analysis**: Resistance mutations, evolution prediction, multi-omics integration
+- **Microbiology Tools**: MIC analysis, assay tracking, strain management
+- **World Model**: Kosmos-style state tracking, knowledge graph, learning loop
+- **Specialized Agents**: Microbiology, Genomics, Cheminformatics, Resistance Critic, Literature
 
 ## Quick Start
 
@@ -59,7 +66,26 @@ khukuri/
 └── examples/              # Usage examples
 ```
 
-## Usage Example
+## Usage Examples
+
+### AMR Discovery (NEW)
+
+```python
+from src.workflows import run_amr_discovery
+
+# Run AMR-focused discovery
+results = run_amr_discovery(
+    pathogen="Mycobacterium tuberculosis",
+    priority="critical",
+    n_compounds=20,
+    n_iterations=3
+)
+
+print(f"Targets: {results['targets']}")
+print(f"Recommendations: {results['recommendations']}")
+```
+
+### Traditional Discovery
 
 ```python
 from src.workflows import run_autonomous_discovery
@@ -70,6 +96,26 @@ results = run_autonomous_discovery(
     target_genes=["inhA", "katG"],
     num_candidates=10
 )
+```
+
+### Resistance Analysis
+
+```python
+from src.bioknowledge import ResistanceDatabase
+from src.genomics import ResistanceGenomicsAnalyzer
+from src.microbiology import MICAnalyzer
+
+# Query resistance genes
+resistance_db = ResistanceDatabase()
+genes = resistance_db.get_genes_by_organism('S. aureus')
+
+# Analyze mutations
+analyzer = ResistanceGenomicsAnalyzer()
+profile = analyzer.analyze_mutation_profile('rpoB', ['S531L'])
+
+# Track MIC data
+mic_analyzer = MICAnalyzer()
+mic_analyzer.add_mic_result('COMP_001', 'ATCC_25923', 'rifampicin', 0.5)
 ```
 
 ## Dependencies
