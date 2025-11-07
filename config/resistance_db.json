@@ -1,29 +1,172 @@
 {
-  "bacterial": {
-    "gyrA": ["S83L", "D87N", "D87G"],
-    "gyrB": ["D426N", "K447E"],
-    "parC": ["S80I", "E84K"],
-    "parE": ["S458A", "D420N"],
-    "rpoB": ["S531L", "H526Y", "D516V"],
-    "mecA": ["insertion"],
-    "vanA": ["gene_acquisition"],
-    "blaZ": ["overexpression"],
-    "ermC": ["methylation"]
+  "genes": {
+    "mecA": {
+      "type": "beta_lactam",
+      "organism": "S. aureus",
+      "mechanism": "target_alteration",
+      "source": "fallback"
+    },
+    "blaCTX-M": {
+      "type": "beta_lactam",
+      "organism": "E. coli",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "blaNDM": {
+      "type": "carbapenem",
+      "organism": "Gram-negative",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "blaKPC": {
+      "type": "carbapenem",
+      "organism": "K. pneumoniae",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "blaOXA": {
+      "type": "carbapenem",
+      "organism": "Acinetobacter",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "vanA": {
+      "type": "glycopeptide",
+      "organism": "Enterococcus",
+      "mechanism": "target_alteration",
+      "source": "fallback"
+    },
+    "vanB": {
+      "type": "glycopeptide",
+      "organism": "Enterococcus",
+      "mechanism": "target_alteration",
+      "source": "fallback"
+    },
+    "inhA": {
+      "type": "isoniazid",
+      "organism": "M. tuberculosis",
+      "mechanism": "target_mutation",
+      "source": "fallback"
+    },
+    "katG": {
+      "type": "isoniazid",
+      "organism": "M. tuberculosis",
+      "mechanism": "target_mutation",
+      "source": "fallback"
+    },
+    "rpoB": {
+      "type": "rifampicin",
+      "organism": "M. tuberculosis",
+      "mechanism": "target_mutation",
+      "source": "fallback"
+    },
+    "embB": {
+      "type": "ethambutol",
+      "organism": "M. tuberculosis",
+      "mechanism": "target_mutation",
+      "source": "fallback"
+    },
+    "gyrA": {
+      "type": "fluoroquinolone",
+      "organism": "M. tuberculosis",
+      "mechanism": "target_mutation",
+      "source": "fallback"
+    },
+    "aac(6')": {
+      "type": "aminoglycoside",
+      "organism": "Multiple",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "aph(3')": {
+      "type": "aminoglycoside",
+      "organism": "Multiple",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "tetM": {
+      "type": "tetracycline",
+      "organism": "Multiple",
+      "mechanism": "efflux_pump",
+      "source": "fallback"
+    },
+    "tetA": {
+      "type": "tetracycline",
+      "organism": "Multiple",
+      "mechanism": "efflux_pump",
+      "source": "fallback"
+    },
+    "ermB": {
+      "type": "macrolide",
+      "organism": "Multiple",
+      "mechanism": "target_modification",
+      "source": "fallback"
+    },
+    "mphA": {
+      "type": "macrolide",
+      "organism": "Multiple",
+      "mechanism": "antibiotic_inactivation",
+      "source": "fallback"
+    },
+    "qnrA": {
+      "type": "fluoroquinolone",
+      "organism": "Multiple",
+      "mechanism": "target_protection",
+      "source": "fallback"
+    },
+    "qnrB": {
+      "type": "fluoroquinolone",
+      "organism": "Multiple",
+      "mechanism": "target_protection",
+      "source": "fallback"
+    },
+    "mcr-1": {
+      "type": "colistin",
+      "organism": "E. coli",
+      "mechanism": "target_modification",
+      "source": "fallback"
+    },
+    "mcr-2": {
+      "type": "colistin",
+      "organism": "E. coli",
+      "mechanism": "target_modification",
+      "source": "fallback"
+    }
   },
-  "parasitic": {
-    "pfcrt": ["K76T", "C72S", "M74I"],
-    "pfmdr1": ["N86Y", "Y184F", "D1246Y"],
-    "kelch13": ["C580Y", "R539T", "I543T"],
-    "dhfr": ["S108N", "N51I", "C59R"],
-    "dhps": ["S436A", "A437G", "K540E"],
-    "tubulin": ["F200Y", "E198A"],
-    "acetylcholine_receptor": ["L256F", "T280I"]
+  "mechanisms": {
+    "target_alteration": [
+      "PBP modification",
+      "ribosome modification",
+      "DNA gyrase mutation"
+    ],
+    "target_mutation": [
+      "point mutation",
+      "deletion",
+      "insertion"
+    ],
+    "antibiotic_inactivation": [
+      "beta-lactamase",
+      "aminoglycoside-modifying enzyme",
+      "chloramphenicol acetyltransferase"
+    ],
+    "efflux_pump": [
+      "MexAB-OprM",
+      "AcrAB-TolC",
+      "Tet efflux"
+    ],
+    "reduced_permeability": [
+      "porin loss",
+      "LPS modification"
+    ],
+    "target_protection": [
+      "ribosomal protection",
+      "DNA gyrase protection"
+    ],
+    "target_modification": [
+      "methylation",
+      "phosphorylation"
+    ]
   },
-  "fungal": {
-    "cyp51": ["G464S", "Y132F", "K143R"],
-    "fks1": ["S645P", "S645F", "F641S"],
-    "erg11": ["Y132F", "G464S"],
-    "mdr1": ["overexpression"],
-    "cdr1": ["overexpression"]
-  }
+  "source": "fallback",
+  "gene_count": 22
 }
