@@ -1,6 +1,6 @@
 # Khukuri Virtual Lab
 
-Production-ready AI-powered drug discovery platform with modular architecture.
+AI-powered drug discovery platform with modular architecture.
 
 ## Features
 
@@ -20,8 +20,6 @@ Production-ready AI-powered drug discovery platform with modular architecture.
 # Install dependencies
 pip install -r requirements.txt
 
-# For development
-pip install -r requirements-dev.txt
 
 # Setup AutoDock Vina (Unix/Linux/macOS)
 bash scripts/setup_vina.sh
