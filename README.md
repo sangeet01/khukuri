@@ -82,6 +82,6 @@ results = run_autonomous_discovery(
 - OpenAI >= 1.0.0 (optional)
 
 
-Authors: Sangeet Sharma and Bipin Gyawali
+Note: Work in Progress
 
 
