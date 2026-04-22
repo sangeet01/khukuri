@@ -20,6 +20,29 @@ class WorldStateTracker:
         self.experiments = []
         self.state_history = []
     
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert complete state to dictionary for persistence."""
+        return {
+            'compounds': self.compounds,
+            'targets': self.targets,
+            'strains': self.strains,
+            'assays': self.assays,
+            'hypotheses': self.hypotheses,
+            'experiments': self.experiments,
+            'state_history': self.state_history[-100:]  # Keep recent history
+        }
+    
+    def from_dict(self, data: Dict[str, Any]):
+        """Restore state from dictionary."""
+        self.compounds = data.get('compounds', {})
+        self.targets = data.get('targets', {})
+        self.strains = data.get('strains', {})
+        self.assays = data.get('assays', {})
+        self.hypotheses = data.get('hypotheses', [])
+        self.experiments = data.get('experiments', [])
+        self.state_history = data.get('state_history', [])
+        logger.info("WorldStateTracker: state restored from data")
+    
     def update_compound(self, compound_id: str, data: Dict):
         """Update compound state"""
         if compound_id not in self.compounds:

@@ -88,8 +88,17 @@ class KhukuriOrchestrator:
             ("biologist", "genomics"): "target selection and resistance",
         }
 
-        # 6. World model (placeholder)
-        self._world_state = {}
+        # 6. World model
+        from ..world_model import WorldStateTracker, KnowledgeGraph, KosmosEngine
+        self.world_state = WorldStateTracker()
+        self.knowledge_graph = KnowledgeGraph()
+        self.kosmos = KosmosEngine(self.world_state, self.knowledge_graph)
+        
+        # Load existing world state if available
+        saved_state = self.memory.load("world_state")
+        if saved_state:
+            self.world_state.from_dict(saved_state)
+            logger.info("KhukuriOrchestrator: restored world state from persistent memory")
 
         # Legacy subsystems
         _oa_client = openai_client
@@ -156,6 +165,115 @@ class KhukuriOrchestrator:
         r = self.agents[responder]
         dialog = SocraticDialog(q, r, n_questions=n_questions)
         return dialog.run(claim, context)
+
+    def run_discovery(self, species_name: str, n_iterations: int = 3, **kwargs) -> Dict[str, Any]:
+        """
+        Run iterative discovery using agents + world model with persistence.
+        """
+        logger.info(f"Starting iterative discovery for: {species_name} ({n_iterations} rounds)")
+        
+        # 1. Observe initial state
+        self.kosmos.observe("discovery_start", {"species": species_name, **kwargs})
+        
+        for i in range(n_iterations):
+            logger.info(f"--- Iteration {i+1}/{n_iterations} ---")
+            
+            # 2. Reason about current progress and strategy
+            strategy = self.kosmos.reason(
+                f"Iteration {i+1}: What is the optimal next step for {species_name}?",
+                {"iteration": i+1, "world_summary": self.world_state.get_state_summary()}
+            )
+            
+            # 3. High-level planning via expert panel
+            panel_result = self.run_panel(
+                topic=f"Strategic pivot for iteration {i+1} on {species_name}",
+                context={"strategy": strategy, "iteration": i+1, **kwargs},
+                max_rounds=2
+            )
+            
+            # 4. Record consensus as a new hypothesis
+            self.world_state.add_hypothesis(
+                hypothesis=panel_result.final_recommendation,
+                evidence=[f"Iterative consensus from panel in round {i+1}"],
+                confidence=0.7 + (i * 0.1) # Increasing confidence over rounds
+            )
+            
+            # 5. Peer debate on specific technical trade-offs (e.g. Chemist vs Toxicologist)
+            if i % 2 == 0: # Every other round, do a deep dive
+                tradeoff_record = self.run_peer_debate(
+                    "chemist", "toxicologist",
+                    topic=f"Safety vs Potency for {species_name} candidates",
+                    context={"current_strategy": strategy}
+                )
+                self.knowledge_graph.add_relationship(
+                    "chemist", "toxicologist", "debated",
+                    {"result": tradeoff_record.consensus, "iteration": i+1}
+                )
+
+            # 6. Tool Execution Phase (The "Doing")
+            logger.info(f"Iteration {i+1}: Executing autonomous tool layer...")
+            tool_results = self._execute_tool_layer(strategy, i+1)
+            
+            # 7. Observe the new data from the tools
+            self.kosmos.observe(f"tool_execution_round_{i+1}", tool_results)
+
+            # 8. Periodic persistence
+            self.memory.save("world_state", self.world_state.to_dict())
+            logger.info(f"Iteration {i+1} complete. World state persisted.")
+
+        return {
+            "species": species_name,
+            "iterations_completed": n_iterations,
+            "world_state": self.world_state.get_state_summary(),
+            "final_hypotheses": self.world_state.get_active_hypotheses()
+        }
+
+    def _execute_tool_layer(self, strategy: Dict[str, Any], iteration: int) -> Dict[str, Any]:
+        """
+        Autonomous execution of computational tools based on agent strategy.
+        """
+        results = {"iteration": iteration, "executed": []}
+        
+        # Determine which tools to run based on strategy/iteration
+        # (In a full v2.0, this would be a more complex mapping)
+        
+        if iteration == 1:
+            # Round 1: Target Identification
+            logger.info("Auto-triggering Target Discovery...")
+            from ..target_discovery.network_analyzer import NetworkAnalyzer
+            from ..target_discovery.target_ranker import TargetRanker
+            
+            analyzer = NetworkAnalyzer()
+            ranker = TargetRanker(analyzer)
+            # Use real network analyzer logic with mock data for now
+            mock_ppi = {("inhA", "katG"): 0.9, ("katG", "ahpC"): 0.7, ("inhA", "fabD"): 0.8}
+            network = analyzer.build_ppi_network(mock_ppi)
+            targets = ranker.rank_targets()
+            
+            for t in targets[:3]:
+                self.world_state.update_target(t['protein'], {
+                    "druggability": t.get('importance_score', 0.5),
+                    "rank": t.get('rank')
+                })
+            results["executed"].append("NetworkAnalyzer + TargetRanker")
+            
+        elif iteration == 2:
+            # Round 2: Lead Generation
+            logger.info("Auto-triggering MoleculeGenerator...")
+            from ..molecule_design.generator import MoleculeGenerator
+            from rdkit import Chem
+            generator = MoleculeGenerator()
+            mols = generator.generate_library(max_compounds=10)
+            for m in mols:
+                smiles = Chem.MolToSmiles(m) if hasattr(m, 'GetNumAtoms') else str(m)
+                self.world_state.update_compound(smiles, {
+                    "status": "generated", 
+                    "iteration": iteration,
+                    "atoms": m.GetNumAtoms() if hasattr(m, 'GetNumAtoms') else 0
+                })
+            results["executed"].append("MoleculeGenerator")
+            
+        return results
 
     def get_memory_stats(self) -> Dict[str, Any]:
         return self.memory.get_stats()
