@@ -1,5 +1,9 @@
 # Khukuri v3.0 - Quick Start Guide
 
+<p align="center">
+  <img src="assets/logo.png" width="300" alt="Khukuri Virtual Lab Logo">
+</p>
+
 Khukuri is a production-grade, autonomous drug discovery platform designed for Antimicrobial Resistance (AMR). It integrates multi-agent orchestration, physics-based docking, and the PINCER counter-evolution engine.
 
 ---
