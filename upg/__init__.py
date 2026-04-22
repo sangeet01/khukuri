@@ -43,8 +43,8 @@ from .domain_agents import (
 from .peer_debate import PeerDebate, PanelDiscussion, SocraticDialog, DebateRecord
 
 # Orchestrators
-from .hybrid_orchestrator import HybridOrchestrator
-from .orchestrator import KhukuriOrchestrator
+from .hybrid_orchestrator import HybridOrchestrator   # legacy — unchanged
+from .orchestrator import KhukuriOrchestrator          # new full-featured
 
 __all__ = [
     # Core

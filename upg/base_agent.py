@@ -12,6 +12,7 @@ logger = logging.getLogger('khukuri')
 class BaseAgent:
     """
     Base class for all Khukuri agents.
+
     Backwards-compatible: still accepts `openai_client` for existing code,
     but internally wraps it in an OpenAIProvider.
     """
@@ -21,7 +22,7 @@ class BaseAgent:
         role: str,
         expertise: str,
         provider: Optional[LLMProvider] = None,
-        openai_client=None,
+        openai_client=None,          # legacy param — auto-wrapped
     ):
         self.role = role
         self.expertise = expertise
@@ -34,7 +35,7 @@ class BaseAgent:
         else:
             self.provider = FallbackProvider()
 
-        self.openai_client = openai_client
+        self.openai_client = openai_client   # kept for legacy attribute access
 
     def analyze(self, data: Dict[str, Any], question: str) -> Dict[str, Any]:
         """Analyse `data` and answer `question`. Returns a dict."""
@@ -68,5 +69,6 @@ class BaseAgent:
             "confidence": "medium",
         }
 
+    # Legacy shims
     def _ai_analyze(self, data, question):
         return self.analyze(data, question)
