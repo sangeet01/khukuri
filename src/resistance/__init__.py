@@ -4,5 +4,28 @@ from .predictor import ResistancePredictor
 from .multi_target import MultiTargetDesigner
 from .evolution_simulator import EvolutionSimulator
 from .mechanisms import load_resistance_mechanisms
+from .pincer_engine import (
+    PincerEngine, 
+    MarkovMutationMatrix, 
+    MutationSpaceMapper,
+    encode_sequence,
+    decode_sequence,
+    bitwise_complement,
+    hamming_distance
+)
+from .threat_fitness import ThreatAwareFitnessFunction
 
-__all__ = ['ResistancePredictor', 'MultiTargetDesigner', 'EvolutionSimulator', 'load_resistance_mechanisms']
+__all__ = [
+    'ResistancePredictor', 
+    'MultiTargetDesigner', 
+    'EvolutionSimulator', 
+    'load_resistance_mechanisms',
+    'PincerEngine',
+    'MarkovMutationMatrix',
+    'MutationSpaceMapper',
+    'encode_sequence',
+    'decode_sequence',
+    'bitwise_complement',
+    'hamming_distance',
+    'ThreatAwareFitnessFunction'
+]

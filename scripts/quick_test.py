@@ -60,11 +60,12 @@ def test_basic_functionality():
         
         print(f"[OK] Molecular scoring works (score: {score:.3f})")
         
-        # Test PINCER core
-        from src.resistance import PincerEngine
+        # Test PINCER core with ThreatAwareFitnessFunction
+        from src.resistance import PincerEngine, ThreatAwareFitnessFunction
         pincer = PincerEngine(population_size=10, n_generations=2)
         pincer.map_threats("AMILV", [0, 1, 2])
-        print("[OK] PINCER mutation mapping works")
+        pincer.evolve(["c1ccccc1"], fitness_fn=ThreatAwareFitnessFunction())
+        print("[OK] PINCER counter-evolution loop works")
         
         return True
     except Exception as e:

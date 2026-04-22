@@ -22,6 +22,7 @@ from src.resistance import (
     decode_sequence,
     bitwise_complement,
     hamming_distance,
+    ThreatAwareFitnessFunction,
 )
 
 
@@ -93,6 +94,8 @@ def demo_pincer():
     print("=" * 60)
 
     pincer = PincerEngine(population_size=50, n_generations=10)
+    fitness_fn = ThreatAwareFitnessFunction()
+    
     threats = pincer.map_threats(
         wild_type_seq, active_site, known_mutations
     )
@@ -127,7 +130,7 @@ def demo_pincer():
         if gen % 3 == 0 or gen == pincer.n_generations - 1:
             print(f"  Gen {gen:3d}: minimax={apex.minimax_score:.4f}  {apex.smiles}")
 
-    apex = pincer.evolve(seed_drugs, callback=log_callback)
+    apex = pincer.evolve(seed_drugs, fitness_fn=fitness_fn, callback=log_callback)
     print()
 
     # --- Results ---
