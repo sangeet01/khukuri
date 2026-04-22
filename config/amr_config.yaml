@@ -1,5 +1,14 @@
 # AMR-specific configuration
 
+pincer:
+  population_size: 100
+  n_generations: 50
+  transition_weight: 0.7  # Markov transition bias
+  transversion_weight: 0.3
+  mutation_rate_per_bp: 1.0e-10
+  fitness_threshold: 0.3  # Biological hard ceiling for viable mutants
+  elite_fraction: 0.2
+
 amr_discovery:
   default_pathogen: "Mycobacterium tuberculosis"
   priority_level: "critical"

@@ -11,6 +11,7 @@ help:
 	@echo "  make format     - Format code"
 	@echo "  make clean      - Clean build artifacts"
 	@echo "  make quick-test - Run quick smoke test"
+	@echo "  make test-pincer - Run PINCER counter-evolution tests"
 
 install:
 	pip install -r requirements.txt
@@ -36,3 +37,6 @@ clean:
 
 quick-test:
 	python scripts/quick_test.py
+
+test-pincer:
+	pytest tests/test_resistance/test_pincer.py -v

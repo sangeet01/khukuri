@@ -54,8 +54,15 @@ python scripts/quick_test.py
 
 ### Run Tests
 
+The PINCER v3.0 engine includes a comprehensive test suite (60+ tests) covering
+2-bit encoding, Markov matrices, mutation mapping, and the Darwin-Godel loop.
+
 ```bash
+# Run all tests
 python -m pytest tests/ -v
+
+# Run specific PINCER tests
+python -m pytest tests/test_resistance/test_pincer.py -v
 ```
 
 ## Project Structure

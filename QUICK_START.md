@@ -1,41 +1,83 @@
-# Khukuri v2.0 - Quick Start Guide
+# Khukuri v3.0 - Quick Start Guide
 
-## What's New in v2.0
+Khukuri is a production-grade, autonomous drug discovery platform designed for Antimicrobial Resistance (AMR). It integrates multi-agent orchestration, physics-based docking, and the PINCER counter-evolution engine.
 
-Khukuri now includes production-grade AMR (Antimicrobial Resistance) discovery features:
+---
 
-- **Bio-Knowledge Layer**: CARD/ResFinder/MEGARes resistance genes, WHO priority pathogens, validated targets
-- **Genomics Analysis**: Mutation profiling, evolution prediction, multi-omics integration
-- **Microbiology Tools**: MIC analysis with CLSI/EUCAST breakpoints, assay tracking, strain management
-- **World Model**: Kosmos-style state tracking, knowledge graph, Bayesian optimization
-- **Multi-Agent System**: 5 specialized AI agents for collaborative analysis
+## 🚀 What's New in v3.0 (The PINCER Update)
 
-## Installation
+Khukuri now features the **PINCER Counter-Evolution Engine**, a Darwin-Gödel co-evolutionary system for preempting antimicrobial resistance:
+
+- **Darwin-Gödel Engine**: Fully autonomous in-silico drug discovery pipeline that optimizes against predicted future mutations.
+- **Minimax Pharmacological Duel**: Models resistance as a zero-sum game ($s^* = \arg\max \min K$), ensuring drugs are effective against the worst-case bacterial threats.
+- **2-Bit DNA Hardware Logic**: Optimized binary encoding for Markov-biased mutation prediction and $O(1)$ complementation.
+- **Mutation Space Mapping**: Pre-computes the finite cluster of viable bacterial threats (the "Red Team").
+- **Skeleton Key Objective**: Evolving molecules that maintain binding affinity across an entire cluster of predicted mutants.
+
+---
+
+## 📦 Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-repo/khukuri.git
 cd khukuri
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## Quick Test (30 seconds)
+---
+
+## 🔍 Quick Test (30 seconds)
+
+Verify your entire installation (Core, ADMET, Docking, PINCER, Synthesis, and Agents) using the automated smoke test:
 
 ```bash
-python scripts/test_amr_features.py
+python scripts/quick_test.py
 ```
 
 Expected output:
 ```
-[SUCCESS] All AMR features working correctly!
+[OK] Core modules
+[OK] ADMET modules
+[OK] Target discovery modules
+[OK] Molecule design modules
+[OK] Docking modules
+[OK] Resistance modules (including PINCER)
+...
+[SUCCESS] All tests passed! Khukuri is ready to use.
 ```
 
-## Basic Usage
+---
 
-### 1. AMR Discovery Workflow
+## 🛠️ Core Modules & Usage
+
+### 1. PINCER Counter-Evolution (New)
+Pre-empt resistance by evolving "Skeleton Key" molecules that target the entire viable mutation space of a pocket.
+
+```python
+from src.resistance import PincerEngine
+
+# Initialize the engine
+pincer = PincerEngine(population_size=100, n_generations=50)
+
+# Phase 1: Map the viable threat landscape (Red Team)
+threats = pincer.map_threats("AMILVCFYWHDEKRSTGNPQ", list(range(20)))
+
+# Phase 2: Evolve the Skeleton Key drug (Blue Team)
+seed_drugs = ["c1ccccc1", "c1ccncc1", "c1ccoc1"]
+apex = pincer.evolve(seed_drugs)
+print(f"Apex Skeleton Key: {apex.smiles} (Minimax Score: {apex.minimax_score:.4f})")
+```
+
+### 2. Autonomous AMR Discovery (The Macro Loop)
+The primary entry point for drug discovery. This workflow automates target selection, compound generation, and PINCER analysis.
 
 ```python
 from src.workflows import run_amr_discovery
 
-# Discover compounds for M. tuberculosis
+# Discover compounds for M. tuberculosis with PINCER pre-computation
 results = run_amr_discovery(
     pathogen='Mycobacterium tuberculosis',
     priority='critical',
@@ -43,164 +85,140 @@ results = run_amr_discovery(
     n_iterations=3
 )
 
-print(f"Targets identified: {len(results['targets'])}")
-print(f"Top recommendation: {results['recommendations'][0]}")
+print(f"PINCER threats mapped: {results['pincer_analysis']['viable_threats_count']}")
+print(f"Top recommendation: {results['recommendations'][0]['compound_id']}")
 ```
 
-### 2. Resistance Analysis
+### 3. Molecular Docking & Binding Site Detection
+Physics-based validation of drug candidates against bacterial targets using AutoDock Vina.
 
 ```python
-from src.bioknowledge import ResistanceDatabase
-from src.genomics import ResistanceGenomicsAnalyzer
+from src.docking import BindingSiteDetector, VinaWrapper
 
-# Query resistance genes
-db = ResistanceDatabase()
-genes = db.get_genes_by_organism('S. aureus')
-print(f"Resistance genes: {genes}")
+# Detect pockets in a protein structure
+detector = BindingSiteDetector()
+pockets = detector.detect_pockets("target.pdb")
 
-# Analyze mutations
-analyzer = ResistanceGenomicsAnalyzer()
-profile = analyzer.analyze_mutation_profile('rpoB', ['S531L', 'H526Y'])
-print(f"Predicted resistance: {profile['predicted_resistance']}")
+# Run docking
+vina = VinaWrapper()
+result = vina.dock("ligand.sdf", "target.pdbqt", pockets[0]['center'])
+print(f"Binding Affinity: {result['affinity']} kcal/mol")
 ```
 
-### 3. MIC Tracking
+### 4. ADMET & Molecular Design
+AI-driven molecule generation, fragment-based design, and property optimization.
 
 ```python
-from src.microbiology import MICAnalyzer
+from src.molecule_design import MoleculeGenerator
+from src.admet import predict_admet
 
-# Track MIC data
-mic = MICAnalyzer()
-mic.add_mic_result('COMP_001', 'ATCC_25923', 'rifampicin', 0.5)
+# Generate candidates
+generator = MoleculeGenerator()
+candidates = generator.generate(n_molecules=100)
 
-# Get profile
-profile = mic.get_mic_profile('ATCC_25923')
-print(f"Resistance index: {mic.calculate_resistance_index('ATCC_25923')}")
+# Filter by drug-likeness
+for smiles in candidates:
+    props = predict_admet(smiles)
+    if props['drug_likeness'] > 0.8:
+        print(f"High-quality candidate: {smiles}")
 ```
 
-### 4. World Model
+### 5. World Model & Knowledge Graph
+Persistent state tracking (Kosmos Engine) and Bayesian learning loop.
 
 ```python
 from src.world_model import WorldStateTracker, KnowledgeGraph
 
-# Track discovery state
 world = WorldStateTracker()
+kg = KnowledgeGraph()
+
+# Add discovery observations
+kg.add_binding('COMP_001', 'InhA', affinity=-8.5)
 world.update_compound('COMP_001', {'smiles': 'CCO', 'activity': 'active'})
 world.add_hypothesis('Compound binds InhA', ['docking'], 0.85)
-
-# Build knowledge graph
-kg = KnowledgeGraph()
-kg.add_compound('COMP_001', {'mw': 250})
-kg.add_target('InhA', {'druggability': 0.9})
-kg.add_binding('COMP_001', 'InhA', affinity=-8.5)
-
-# Find multi-target compounds
-multi_target = kg.find_multi_target_compounds(min_targets=2)
 ```
 
-## Run Examples
+### 6. Resistance Analysis (Genomics & Microbiology)
+Analyze clinical resistance mutations and track MIC (Minimum Inhibitory Concentration) data.
 
+```python
+from src.bioknowledge import ResistanceDatabase
+from src.genomics import ResistanceGenomicsAnalyzer
+from src.microbiology import MICAnalyzer
+
+# Query resistance genes
+db = ResistanceDatabase()
+genes = db.get_genes_by_organism('S. aureus')
+
+# Analyze mutations (e.g. rpoB S531L)
+analyzer = ResistanceGenomicsAnalyzer()
+profile = analyzer.analyze_mutation_profile('rpoB', ['S531L'])
+
+# Track MIC data
+mic = MICAnalyzer()
+mic.add_mic_result('COMP_001', 'ATCC_25923', 'rifampicin', 0.5)
+```
+
+---
+
+## 🧪 Run Examples & Tests
+
+### Examples
+| Example | Description |
+| :--- | :--- |
+| `python examples/amr_discovery_example.py` | Full end-to-end AMR discovery workflow |
+| `python examples/pincer_example.py` | Standalone demonstration of the PINCER engine |
+| `python examples/world_model_example.py` | Knowledge graph and state tracking |
+
+### Tests
 ```bash
-# Complete AMR discovery examples
-python examples/amr_discovery_example.py
+# Run the full test suite (Core, ADMET, Genomics, etc.)
+python -m pytest tests/ -v
+
+# Run the specific PINCER counter-evolution tests
+make test-pincer
 ```
 
-This runs 5 examples:
-1. Basic AMR discovery
-2. Resistance pattern analysis
-3. MIC data tracking
-4. World model demonstration
-5. Complete workflow
+---
 
-## Run Tests
+## ⚙️ Configuration
 
-```bash
-# Test all AMR modules
-python -m pytest tests/test_bioknowledge/ -v
-python -m pytest tests/test_genomics/ -v
-python -m pytest tests/test_microbiology/ -v
-python -m pytest tests/test_world_model/ -v
-python -m pytest tests/test_integration/ -v
-```
-
-## Configuration
-
-Edit `config/amr_config.yaml`:
+Customize the discovery pipeline by editing `config/amr_config.yaml`:
 
 ```yaml
+# PINCER Engine Parameters
+pincer:
+  population_size: 100
+  n_generations: 50
+  transition_weight: 0.7  # Markov transition bias
+  fitness_threshold: 0.3  # Biological hard ceiling for viable mutants
+
+# Discovery Workflow Parameters
 amr_discovery:
   default_pathogen: "Mycobacterium tuberculosis"
   n_compounds_per_iteration: 20
   n_iterations: 3
-
-agents:
-  use_ai: false  # Set true with OpenAI API key
-  model: "gpt-3.5-turbo"
 ```
 
-## Key Features
+---
 
-### Bio-Knowledge Layer
-- **ResistanceDatabase**: 7 resistance genes, query by organism/drug class
-- **PathogenDatabase**: 6 WHO priority pathogens with essential genes
-- **TargetProteinDB**: 6 validated targets with druggability scores
-
-### Genomics Layer
-- **ResistanceGenomicsAnalyzer**: Mutation profiling, evolution prediction
-- **MutationTracker**: Strain comparison, co-occurring mutations
-- **OmicsIntegrator**: Multi-omics data integration
-
-### Microbiology Layer
-- **MICAnalyzer**: CLSI/EUCAST breakpoints, cross-resistance prediction
-- **AssayTracker**: Biological screening data management
-- **StrainManager**: 4 ATCC reference strains
-
-### World Model
-- **WorldStateTracker**: Complete state tracking (compounds, targets, strains, assays)
-- **KnowledgeGraph**: Entity relationships, multi-target identification
-- **LearningLoop**: Bayesian optimization, active learning
-
-### Multi-Agent System
-- **MicrobiologyAgent**: Pathogen biology, AMR mechanisms
-- **GenomicsAgent**: Resistance genomics, mutations
-- **CheminformaticsAgent**: Molecular design, QSAR
-- **ResistanceCriticAgent**: Resistance risk assessment
-- **LiteratureAgent**: Evidence synthesis
-
-## Documentation
-
-- **Full Guide**: `docs/amr_features.md`
-- **Implementation Summary**: `AMR_IMPLEMENTATION_SUMMARY.md`
-- **Checklist**: `IMPLEMENTATION_CHECKLIST.md`
-
-## Architecture
+## 🏗️ Architecture
 
 ```
-AMR Discovery System
-├── Bio-Knowledge (resistance genes, pathogens, targets)
-├── Genomics (mutations, evolution, omics)
-├── Microbiology (MIC, assays, strains)
-├── World Model (state tracking, knowledge graph, learning)
-└── Multi-Agent System (5 specialized agents)
+Khukuri Virtual Lab
+├── workflows/         # End-to-end pipelines (AMR Discovery)
+├── resistance/        # PINCER Engine, Darwin-Godel Loop
+├── docking/           # Vina Wrapper, Pocket Detection
+├── molecule_design/   # Generation & Optimization
+├── world_model/       # Kosmos Engine, Knowledge Graph
+├── bioknowledge/      # Pathogen & Resistance Databases
+└── agents/            # Multi-agent Orchestration
 ```
 
-## Next Steps
+---
 
-1. **Explore**: Run `python examples/amr_discovery_example.py`
-2. **Customize**: Edit `config/amr_config.yaml`
-3. **Extend**: Add your own pathogens/targets to databases
-4. **Integrate**: Use with existing Khukuri modules (docking, ADMET)
-5. **Deploy**: Production-ready with tests and documentation
+## 📜 Version & Status
 
-## Support
-
-- Examples: `examples/amr_discovery_example.py`
-- Tests: `tests/test_*/`
-- Docs: `docs/amr_features.md`
-- Config: `config/amr_config.yaml`
-
-## Version
-
-Khukuri Virtual Lab v2.0 - AMR-Focused Drug Discovery Platform
-
+**Version**: 3.0.0 (PINCER Counter-Evolution Update)
 **Status**: Production-ready ✓
+**Author**: Khukuri Research Team

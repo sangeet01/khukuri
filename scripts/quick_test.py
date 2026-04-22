@@ -14,35 +14,35 @@ def test_imports():
     
     try:
         from src.core import MolecularScorer, Validator, setup_logger
-        print("✓ Core modules")
+        print("[OK] Core modules")
         
         from src.admet import calculate_drug_likeness, predict_admet
-        print("✓ ADMET modules")
+        print("[OK] ADMET modules")
         
         from src.target_discovery import NetworkAnalyzer, TargetRanker
-        print("✓ Target discovery modules")
+        print("[OK] Target discovery modules")
         
         from src.molecule_design import MoleculeGenerator, PropertyOptimizer
-        print("✓ Molecule design modules")
+        print("[OK] Molecule design modules")
         
         from src.docking import ReceptorPrep, BindingSiteDetector
-        print("✓ Docking modules")
+        print("[OK] Docking modules")
         
-        from src.resistance import ResistancePredictor, MultiTargetDesigner
-        print("✓ Resistance modules")
+        from src.resistance import ResistancePredictor, MultiTargetDesigner, PincerEngine
+        print("[OK] Resistance modules (including PINCER)")
         
         from src.synthesis import RetroSynthesizer, RoutePlanner
-        print("✓ Synthesis modules")
+        print("[OK] Synthesis modules")
         
         from src.agents import BaseAgent, VirtualLab
-        print("✓ Agent modules")
+        print("[OK] Agent modules")
         
         from src.workflows import run_autonomous_discovery
-        print("✓ Workflow modules")
+        print("[OK] Workflow modules")
         
         return True
     except ImportError as e:
-        print(f"✗ Import failed: {e}")
+        print(f"[FAIL] Import failed: {e}")
         return False
 
 
@@ -58,10 +58,17 @@ def test_basic_functionality():
         scorer = MolecularScorer()
         score, _, _ = scorer.calculate_composite_score(mol)
         
-        print(f"✓ Molecular scoring works (score: {score:.3f})")
+        print(f"[OK] Molecular scoring works (score: {score:.3f})")
+        
+        # Test PINCER core
+        from src.resistance import PincerEngine
+        pincer = PincerEngine(population_size=10, n_generations=2)
+        pincer.map_threats("AMILV", [0, 1, 2])
+        print("[OK] PINCER mutation mapping works")
+        
         return True
     except Exception as e:
-        print(f"✗ Functionality test failed: {e}")
+        print(f"[FAIL] Functionality test failed: {e}")
         return False
 
 
@@ -77,10 +84,10 @@ def main():
     
     print("\n" + "=" * 60)
     if all(results):
-        print("✓ All tests passed! Khukuri is ready to use.")
+        print("[SUCCESS] All tests passed! Khukuri is ready to use.")
         return 0
     else:
-        print("✗ Some tests failed. Check installation.")
+        print("[ERROR] Some tests failed. Check installation.")
         return 1
 
 
