@@ -1,74 +1,47 @@
-"""Base agent class — uses unified LLMProvider interface."""
+"""Base agent class"""
 
-import json
 import logging
-from typing import Any, Dict, Optional
-
-from .llm_provider import LLMProvider, FallbackProvider, create_provider
+import json
 
 logger = logging.getLogger('khukuri')
 
 
 class BaseAgent:
-    """
-    Base class for all Khukuri agents.
-
-    Backwards-compatible: still accepts `openai_client` for existing code,
-    but internally wraps it in an OpenAIProvider.
-    """
-
-    def __init__(
-        self,
-        role: str,
-        expertise: str,
-        provider: Optional[LLMProvider] = None,
-        openai_client=None,          # legacy param — auto-wrapped
-    ):
+    """Base class for AI agents"""
+    
+    def __init__(self, role, expertise, openai_client=None):
         self.role = role
         self.expertise = expertise
+        self.openai_client = openai_client
         self.memory = []
-
-        if provider is not None:
-            self.provider = provider
-        elif openai_client is not None:
-            self.provider = create_provider("openai", openai_client=openai_client)
-        else:
-            self.provider = FallbackProvider()
-
-        self.openai_client = openai_client   # kept for legacy attribute access
-
-    def analyze(self, data: Dict[str, Any], question: str) -> Dict[str, Any]:
-        """Analyse `data` and answer `question`. Returns a dict."""
-        system = (
-            f"You are a {self.role} with expertise in {self.expertise}. "
-            "Return only valid JSON."
-        )
-        prompt = (
-            f"Question: {question}\n\n"
-            f"Data: {json.dumps(data, default=str)}\n\n"
-            "Return JSON with keys: role, analysis, recommendations, confidence"
-        )
-        try:
-            result = self.provider.complete_json(
-                [{"role": "user", "content": prompt}],
-                system=system,
-                temperature=0.7,
-                max_tokens=500,
-            )
-            self.memory.append({"question": question, "result": result})
-            return result
-        except Exception as exc:
-            logger.warning(f"{self.role} analysis failed: {exc}")
-            return self._fallback_analyze(data, question)
-
-    def _fallback_analyze(self, data, question):
-        return {
-            "role": self.role,
-            "analysis": f"Analysis of {question}",
-            "recommendations": ["Proceed with validation", "Monitor results"],
-            "confidence": "medium",
-        }
-
-    # Legacy shims
+    
+    def analyze(self, data, question):
+        """Analyze data and answer question"""
+        if self.openai_client:
+            return self._ai_analyze(data, question)
+        return self._fallback_analyze(data, question)
+    
     def _ai_analyze(self, data, question):
-        return self.analyze(data, question)
+        """AI-powered analysis"""
+        try:
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": f"You are a {self.role} with expertise in {self.expertise}."},
+                    {"role": "user", "content": f"{question}\n\nData: {json.dumps(data, default=str)}"}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            return json.loads(response.choices[0].message.content)
+        except:
+            return self._fallback_analyze(data, question)
+    
+    def _fallback_analyze(self, data, question):
+        """Fallback analysis without AI"""
+        return {
+            'role': self.role,
+            'analysis': f"Analysis of {question}",
+            'recommendations': ['Proceed with validation', 'Monitor results'],
+            'confidence': 'medium'
+        }
