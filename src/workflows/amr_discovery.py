@@ -109,18 +109,11 @@ class AMRDiscoveryWorkflow:
                 hyp.get('confidence', 0.5)
             )
         
-        # 5. PINCER counter-evolution analysis
-        pincer_results = None
-        if targets:
-            pincer_results = self._run_pincer_analysis(targets[0], pathogen)
-            logger.info(f"PINCER analysis complete: {pincer_results.get('viable_threats_count', 0)} threats mapped")
-        
-        # 6. Iterative compound discovery
+        # 5. Iterative compound discovery
         results = {
             'pathogen': pathogen,
             'targets': targets,
             'resistance_profile': resistance_profile,
-            'pincer_analysis': pincer_results,
             'hypotheses': len(self.world_state.hypotheses),
             'iterations': []
         }
@@ -144,7 +137,7 @@ class AMRDiscoveryWorkflow:
             results['iterations'].append(iter_results)
             self.learning_loop.next_iteration()
         
-        # 7. Final recommendations and report
+        # 6. Final recommendations and report
         results['recommendations'] = self._generate_recommendations()
         results['world_state_summary'] = self.world_state.get_state_summary()
         results['kosmos_report'] = self.kosmos.generate_report()
