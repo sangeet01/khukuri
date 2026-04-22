@@ -11,7 +11,7 @@ from ..agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, Cheminformati
 from ..molecule_design import MoleculeGenerator, PropertyOptimizer
 from ..docking import VinaWrapper
 from ..admet import predict_admet
-from ..resistance import ResistancePredictor
+from ..resistance import ResistancePredictor, EvolutionSimulator
 
 logger = logging.getLogger('khukuri')
 
@@ -59,6 +59,11 @@ class AMRDiscoveryWorkflow:
         self.molecule_generator = MoleculeGenerator()
         self.property_optimizer = PropertyOptimizer()
         self.resistance_predictor = ResistancePredictor()
+        
+        # PINCER counter-evolution engine
+        self.evolution_simulator = EvolutionSimulator(
+            population_size=50, n_generations=20
+        )
     
     def _update_databases(self):
         """Auto-update resistance databases"""
@@ -95,11 +100,18 @@ class AMRDiscoveryWorkflow:
                 hyp.get('confidence', 0.5)
             )
         
-        # 5. Iterative compound discovery
+        # 5. PINCER counter-evolution analysis
+        pincer_results = None
+        if targets:
+            pincer_results = self._run_pincer_analysis(targets[0], pathogen)
+            logger.info(f"PINCER analysis complete: {pincer_results.get('viable_threats_count', 0)} threats mapped")
+        
+        # 6. Iterative compound discovery
         results = {
             'pathogen': pathogen,
             'targets': targets,
             'resistance_profile': resistance_profile,
+            'pincer_analysis': pincer_results,
             'hypotheses': len(self.world_state.hypotheses),
             'iterations': []
         }
@@ -123,7 +135,7 @@ class AMRDiscoveryWorkflow:
             results['iterations'].append(iter_results)
             self.learning_loop.next_iteration()
         
-        # 6. Final recommendations and report
+        # 7. Final recommendations and report
         results['recommendations'] = self._generate_recommendations()
         results['world_state_summary'] = self.world_state.get_state_summary()
         results['kosmos_report'] = self.kosmos.generate_report()
@@ -332,6 +344,84 @@ class AMRDiscoveryWorkflow:
             })
         
         return recommendations
+
+    def _run_pincer_analysis(self, primary_target, pathogen):
+        """
+        Run PINCER counter-evolution analysis on the primary target.
+        
+        Maps the finite viable mutation space of the target binding pocket
+        and evolves Skeleton Key drug candidates via the Darwin-Godel loop.
+        """
+        target_name = primary_target.get('name', 'unknown')
+        logger.info(f"PINCER: Analyzing resistance landscape for {target_name}")
+        
+        # Get known mutations for this target from genomics analyzer
+        known_muts = {}
+        gene_mutations = self.genomics_analyzer.known_mutations
+        for gene, mutations in gene_mutations.items():
+            if gene.lower() in target_name.lower() or target_name.lower() in gene.lower():
+                for mut_name, mut_info in mutations.items():
+                    # Parse mutation notation (e.g., S531L -> position 531)
+                    pos_str = ''.join(c for c in mut_name if c.isdigit())
+                    if pos_str:
+                        pos = int(pos_str)
+                        mutant_aa = mut_name[-1] if mut_name[-1].isalpha() else ''
+                        if mutant_aa:
+                            if pos not in known_muts:
+                                known_muts[pos] = []
+                            known_muts[pos].append({
+                                'mutant': mutant_aa,
+                                'fitness_cost': mut_info.get('fitness_cost', 0.1),
+                            })
+        
+        # Build a representative binding pocket sequence
+        # In production, this comes from PDB structure via binding_site detector.
+        # For now, generate a plausible active site from the target info.
+        pocket_length = 20
+        pocket_seq = 'AMILVCFYWHDEKRSTGNPQ'  # representative mixed residues
+        active_indices = list(range(pocket_length))
+        
+        # Generate seed molecules from the current library
+        seed_mols = self.molecule_generator.generate_library(max_compounds=20)
+        seed_smiles = []
+        try:
+            from rdkit import Chem
+            for mol in seed_mols:
+                smi = Chem.MolToSmiles(mol)
+                if smi:
+                    seed_smiles.append(smi)
+        except ImportError:
+            seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
+        
+        if not seed_smiles:
+            seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
+        
+        # Run PINCER
+        pincer_results = self.evolution_simulator.run_pincer(
+            wild_type_seq=pocket_seq,
+            active_site_indices=active_indices,
+            seed_smiles=seed_smiles,
+            known_mutations=known_muts if known_muts else None,
+        )
+        
+        # Store in world state
+        if pincer_results.get('apex_drug'):
+            self.world_state.update_compound(
+                'PINCER_APEX',
+                {
+                    'compound_id': 'PINCER_APEX',
+                    'smiles': pincer_results['apex_drug']['smiles'],
+                    'minimax_score': pincer_results['apex_drug']['minimax_score'],
+                    'source': 'pincer_evolution',
+                    'viable_threats': pincer_results.get('viable_threats_count', 0),
+                }
+            )
+            self.knowledge_graph.add_compound('PINCER_APEX', {
+                'smiles': pincer_results['apex_drug']['smiles'],
+                'source': 'pincer_counter_evolution',
+            })
+        
+        return pincer_results
 
 
 def run_amr_discovery(pathogen: str, priority: str = 'critical', 

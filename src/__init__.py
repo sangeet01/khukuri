@@ -1,6 +1,6 @@
 """Khukuri Virtual Lab - AMR-Focused Drug Discovery Platform"""
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"
 __author__ = "Khukuri Research Team"
 
 from .core import MolecularScorer, Validator, setup_logger
@@ -8,6 +8,9 @@ from .target_discovery import NetworkAnalyzer, TargetRanker
 from .molecule_design import MoleculeGenerator, PropertyOptimizer
 from .docking import VinaWrapper, BindingSiteDetector
 from .admet import calculate_drug_likeness, predict_admet
+
+# PINCER counter-evolution engine
+from .resistance import PincerEngine, MutationSpaceMapper, MarkovMutationMatrix
 
 # AMR-specific modules
 from .bioknowledge import ResistanceDatabase, PathogenDatabase, TargetProteinDB, DatabaseUpdater
@@ -59,4 +62,8 @@ __all__ = [
     'CheminformaticsAgent',
     'ResistanceCriticAgent',
     'LiteratureAgent',
+    # PINCER Engine
+    'PincerEngine',
+    'MutationSpaceMapper',
+    'MarkovMutationMatrix',
 ]
