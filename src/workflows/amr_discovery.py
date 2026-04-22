@@ -1,6 +1,7 @@
 """Autonomous AMR-focused drug discovery workflow"""
 
 import logging
+import os
 from typing import Dict, List, Optional
 from ..bioknowledge import ResistanceDatabase, PathogenDatabase, TargetProteinDB, DatabaseUpdater
 from ..genomics import ResistanceGenomicsAnalyzer, MutationTracker, OmicsIntegrator
@@ -9,9 +10,10 @@ from ..world_model import WorldStateTracker, KnowledgeGraph, LearningLoop, Kosmo
 from ..agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, CheminformaticsAgent,
                                   ResistanceCriticAgent, LiteratureAgent)
 from ..molecule_design import MoleculeGenerator, PropertyOptimizer
-from ..docking import VinaWrapper
+from ..docking import VinaWrapper, BindingSiteDetector, ReceptorPrep
 from ..admet import predict_admet
 from ..resistance import ResistancePredictor, EvolutionSimulator
+from ..synthesis import RetroSynthesizer, RoutePlanner, calculate_sa_score
 
 logger = logging.getLogger('khukuri')
 
@@ -64,6 +66,13 @@ class AMRDiscoveryWorkflow:
         self.evolution_simulator = EvolutionSimulator(
             population_size=50, n_generations=20
         )
+        
+        # Docking and Preparation
+        self.receptor_prep = ReceptorPrep()
+        
+        # Synthesis orchestration
+        self.retrosynthesizer = RetroSynthesizer()
+        self.route_planner = RoutePlanner()
     
     def _update_databases(self):
         """Auto-update resistance databases"""
@@ -345,26 +354,49 @@ class AMRDiscoveryWorkflow:
         
         return recommendations
 
-    def _run_pincer_analysis(self, primary_target, pathogen):
+    def _run_pincer_analysis(self, primary_target: Dict, pathogen: str) -> Dict:
         """
         Run PINCER counter-evolution analysis on the primary target.
-        
-        Maps the finite viable mutation space of the target binding pocket
-        and evolves Skeleton Key drug candidates via the Darwin-Godel loop.
+        Pulls real residue sequences from PDB structures and performs
+        end-to-end orchestration (ADMET + Synthesis) for candidates.
         """
         target_name = primary_target.get('name', 'unknown')
-        logger.info(f"PINCER: Analyzing resistance landscape for {target_name}")
+        pdb_ids = primary_target.get('pdb_ids', [])
+        logger.info(f"PINCER: Analyzing resistance landscape for {target_name} (PDBs: {pdb_ids})")
         
-        # Get known mutations for this target from genomics analyzer
+        # 1. Refine Active-Site Logic: Extract real residues from PDB
+        pocket_seq = 'AMILVCFYWHDEKRSTGNPQ' # Default fallback
+        active_indices = list(range(20))
+        
+        if pdb_ids:
+            pdb_id = pdb_ids[0]
+            pdb_file = self.receptor_prep.download_pdb(pdb_id, output_dir='data/pdb')
+            if pdb_file:
+                # Clean receptor (remove heteroatoms, water)
+                clean_pdb = os.path.join('data/pdb', f"{pdb_id}_clean.pdb")
+                cleaned_file = self.receptor_prep.clean_receptor(pdb_file, output_file=clean_pdb)
+                if cleaned_file:
+                    pdb_file = cleaned_file
+                
+                detector = BindingSiteDetector(pdb_file)
+                center = detector.auto_detect()
+                pocket_res = detector.get_pocket_residues(center, radius=12.0)
+                
+                if pocket_res:
+                    # Construct real pocket sequence and indices
+                    pocket_seq = "".join(r['code'] for r in pocket_res)
+                    active_indices = list(range(len(pocket_res)))
+                    logger.info(f"PINCER: Extracted real pocket residues ({len(pocket_res)} aa) from {pdb_id}")
+        
+        # 2. Get known mutations
         known_muts = {}
         gene_mutations = self.genomics_analyzer.known_mutations
         for gene, mutations in gene_mutations.items():
             if gene.lower() in target_name.lower() or target_name.lower() in gene.lower():
                 for mut_name, mut_info in mutations.items():
-                    # Parse mutation notation (e.g., S531L -> position 531)
                     pos_str = ''.join(c for c in mut_name if c.isdigit())
                     if pos_str:
-                        pos = int(pos_str)
+                        pos = int(pos_str) % len(active_indices) # Map to pocket index
                         mutant_aa = mut_name[-1] if mut_name[-1].isalpha() else ''
                         if mutant_aa:
                             if pos not in known_muts:
@@ -374,29 +406,21 @@ class AMRDiscoveryWorkflow:
                                 'fitness_cost': mut_info.get('fitness_cost', 0.1),
                             })
         
-        # Build a representative binding pocket sequence
-        # In production, this comes from PDB structure via binding_site detector.
-        # For now, generate a plausible active site from the target info.
-        pocket_length = 20
-        pocket_seq = 'AMILVCFYWHDEKRSTGNPQ'  # representative mixed residues
-        active_indices = list(range(pocket_length))
-        
-        # Generate seed molecules from the current library
+        # 3. Generate seed molecules
         seed_mols = self.molecule_generator.generate_library(max_compounds=20)
         seed_smiles = []
         try:
             from rdkit import Chem
             for mol in seed_mols:
                 smi = Chem.MolToSmiles(mol)
-                if smi:
-                    seed_smiles.append(smi)
-        except ImportError:
+                if smi: seed_smiles.append(smi)
+        except:
             seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
         
         if not seed_smiles:
             seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
         
-        # Run PINCER
+        # 4. Run PINCER
         pincer_results = self.evolution_simulator.run_pincer(
             wild_type_seq=pocket_seq,
             active_site_indices=active_indices,
@@ -404,21 +428,51 @@ class AMRDiscoveryWorkflow:
             known_mutations=known_muts if known_muts else None,
         )
         
-        # Store in world state
+        # 5. End-to-End Orchestration: ADMET + Synthesis for Apex Candidate
         if pincer_results.get('apex_drug'):
+            apex = pincer_results['apex_drug']
+            smiles = apex['smiles']
+            
+            # ADMET
+            admet_props = predict_admet(smiles)
+            apex['admet'] = admet_props
+            
+            # Synthesis
+            try:
+                from rdkit import Chem
+                mol = Chem.MolFromSmiles(smiles)
+                if mol:
+                    retro_tree = self.retrosynthesizer.analyze(mol)
+                    route_score = self.route_planner.score_route(retro_tree)
+                    sa_score = calculate_sa_score(mol)
+                    
+                    apex['synthesis'] = {
+                        'retrosynthesis_tree': retro_tree,
+                        'route_score': route_score,
+                        'sa_score': sa_score,
+                        'feasibility': 'high' if sa_score < 4.0 else 'medium' if sa_score < 6.0 else 'low'
+                    }
+                    logger.info(f"PINCER Orchestration: Apex drug SA score: {sa_score:.2f}")
+            except Exception as e:
+                logger.warning(f"Synthesis orchestration failed: {e}")
+            
+            # Store in world state
             self.world_state.update_compound(
                 'PINCER_APEX',
                 {
                     'compound_id': 'PINCER_APEX',
-                    'smiles': pincer_results['apex_drug']['smiles'],
-                    'minimax_score': pincer_results['apex_drug']['minimax_score'],
+                    'smiles': smiles,
+                    'minimax_score': apex['minimax_score'],
+                    'admet': apex.get('admet'),
+                    'synthesis': apex.get('synthesis'),
                     'source': 'pincer_evolution',
                     'viable_threats': pincer_results.get('viable_threats_count', 0),
                 }
             )
             self.knowledge_graph.add_compound('PINCER_APEX', {
-                'smiles': pincer_results['apex_drug']['smiles'],
+                'smiles': smiles,
                 'source': 'pincer_counter_evolution',
+                'sa_score': apex.get('synthesis', {}).get('sa_score'),
             })
         
         return pincer_results

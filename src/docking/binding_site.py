@@ -27,6 +27,60 @@ class BindingSiteDetector:
         logger.info(f"Using geometric center: {center}")
         return center
     
+    def get_pocket_residues(self, center, radius=10.0):
+        """Get residues within a radius of the specified center"""
+        pocket_residues = []
+        try:
+            structure = self.parser.get_structure('protein', self.pdb_file)
+            for model in structure:
+                for chain in model:
+                    for residue in chain:
+                        # Check distance of any atom in residue to center
+                        for atom in residue:
+                            dist = np.linalg.norm(atom.get_coord() - center)
+                            if dist <= radius:
+                                # Get 1-letter code
+                                res_name = residue.get_resname()
+                                res_id = residue.get_id()[1]
+                                chain_id = chain.get_id()
+                                pocket_residues.append({
+                                    'id': res_id,
+                                    'chain': chain_id,
+                                    'name': res_name,
+                                    'code': self._get_one_letter(res_name)
+                                })
+                                break
+            
+            logger.info(f"Extracted {len(pocket_residues)} pocket residues")
+            return pocket_residues
+        except Exception as e:
+            logger.error(f"Failed to get pocket residues: {e}")
+            return []
+
+    def get_sequence(self):
+        """Extract full amino acid sequence from PDB"""
+        seq = []
+        try:
+            structure = self.parser.get_structure('protein', self.pdb_file)
+            for model in structure:
+                for chain in model:
+                    for residue in chain:
+                        if residue.get_id()[0] == ' ': # Standard residue
+                            seq.append(self._get_one_letter(residue.get_resname()))
+            return "".join(seq)
+        except:
+            return ""
+
+    def _get_one_letter(self, resname):
+        """Convert 3-letter residue name to 1-letter code"""
+        map_3to1 = {
+            'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
+            'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
+            'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P',
+            'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V'
+        }
+        return map_3to1.get(resname, 'X')
+
     def _detect_ligand_site(self):
         """Detect site from existing ligands"""
         ligand_coords = []
