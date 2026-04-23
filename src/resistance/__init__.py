@@ -14,6 +14,13 @@ from .pincer_engine import (
     hamming_distance
 )
 from .threat_fitness import ThreatAwareFitnessFunction
+from .hgt_mapper import (
+    HGTMapper,
+    ResistanceGeneAllele,
+    TransferThreatCluster,
+    DualRedTeamMixin,
+    make_pincer_with_hgt
+)
 
 __all__ = [
     'ResistancePredictor', 
@@ -27,5 +34,10 @@ __all__ = [
     'decode_sequence',
     'bitwise_complement',
     'hamming_distance',
-    'ThreatAwareFitnessFunction'
+    'ThreatAwareFitnessFunction',
+    'HGTMapper',
+    'ResistanceGeneAllele',
+    'TransferThreatCluster',
+    'DualRedTeamMixin',
+    'make_pincer_with_hgt'
 ]

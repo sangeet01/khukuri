@@ -15,7 +15,8 @@ Khukuri now features the **PINCER Counter-Evolution Engine**, a Darwin-Gödel co
 - **Darwin-Gödel Engine**: Fully autonomous in-silico drug discovery pipeline that optimizes against predicted future mutations.
 - **Minimax Pharmacological Duel**: Models resistance as a zero-sum game ($s^* = \arg\max \min K$), ensuring drugs are effective against the worst-case bacterial threats.
 - **2-Bit DNA Hardware Logic**: Optimized binary encoding for Markov-biased mutation prediction and $O(1)$ complementation.
-- **Mutation Space Mapping**: Pre-computes the finite cluster of viable bacterial threats (the "Red Team").
+- **Mutation Space Mapping (Vertical)**: Pre-computes the finite cluster of viable chromosomal mutations (the "Red Team A").
+- **HGT Network Mapping (Horizontal)**: Predicts the acquisition of resistance genes (e.g., *vanA*, *mecA*) via plasmids and mobile elements from the microbiome (the "Red Team B").
 - **Skeleton Key Objective**: Evolving molecules that maintain binding affinity across an entire cluster of predicted mutants.
 
 ---

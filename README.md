@@ -1,4 +1,4 @@
-# Khukuri Virtual Lab v3.0
+# Khukuri Virtual Lab 
 
 <p align="center">
   <img src="assets/logo.png" width="400" alt="Khukuri Virtual Lab Logo">
@@ -245,3 +245,6 @@ Target Side (Red Team):                    Solution Side (Blue Team):
 ✅ **Production-ready**: 70+ files, ~3,500 lines of code, 0% mocks, 0% duplication
 
 
+#
+
+Khukuri V3.0

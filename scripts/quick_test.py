@@ -60,12 +60,17 @@ def test_basic_functionality():
         
         print(f"[OK] Molecular scoring works (score: {score:.3f})")
         
-        # Test PINCER core with ThreatAwareFitnessFunction
-        from src.resistance import PincerEngine, ThreatAwareFitnessFunction
-        pincer = PincerEngine(population_size=10, n_generations=2)
+        # Test PINCER core with ThreatAwareFitnessFunction and HGT
+        from src.resistance import PincerEngine, ThreatAwareFitnessFunction, make_pincer_with_hgt
+        from src.world_model import KnowledgeGraph
+        
+        kg = KnowledgeGraph()
+        pincer = make_pincer_with_hgt(population_size=10, n_generations=2)
         pincer.map_threats("AMILV", [0, 1, 2])
+        pincer.map_hgt_threats(kg, target_strain="S. aureus")
+        
         pincer.evolve(["c1ccccc1"], fitness_fn=ThreatAwareFitnessFunction())
-        print("[OK] PINCER counter-evolution loop works")
+        print("[OK] PINCER Dual Red Team (Vertical + Horizontal) works")
         
         return True
     except Exception as e:

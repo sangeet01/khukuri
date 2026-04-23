@@ -413,12 +413,14 @@ class AMRDiscoveryWorkflow:
         if not seed_smiles:
             seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
         
-        # 4. Run PINCER
+        # 4. Run PINCER with Dual Red Team (Vertical + Horizontal)
         pincer_results = self.evolution_simulator.run_pincer(
             wild_type_seq=pocket_seq,
             active_site_indices=active_indices,
             seed_smiles=seed_smiles,
             known_mutations=known_muts if known_muts else None,
+            knowledge_graph=self.knowledge_graph,
+            target_strain=pathogen
         )
         
         # 5. End-to-End Orchestration: ADMET + Synthesis for Apex Candidate
