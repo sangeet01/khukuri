@@ -242,7 +242,7 @@ Target Side (Red Team):                    Solution Side (Blue Team):
 
 ## Status
 
-✅ **Production-ready**: 70+ files, ~3,500 lines of code, 0% mocks, 0% duplication
+✅ **Research-grade**: 70+ files, ~3,500 lines of code, 0% mocks, 0% duplication
 
 
 #
