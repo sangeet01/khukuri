@@ -4,7 +4,7 @@
   <img src="assets/logo.png" width="400" alt="Khukuri Virtual Lab Logo">
 </p>
 
-Production-ready AI-powered drug discovery platform with the PINCER counter-evolution engine.
+AI-powered drug discovery platform with the PINCER counter-evolution engine.
 
 ## Features
 
