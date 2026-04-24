@@ -47,3 +47,4 @@ sphinx-rtd-theme>=1.0.0
 jupyter>=1.0.0
 ipykernel>=6.9.0
 
+linearscript >=3.0.2

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from ..bioknowledge import ResistanceDatabase, PathogenDatabase, TargetProteinDB, DatabaseUpdater
 from ..genomics import ResistanceGenomicsAnalyzer, MutationTracker, OmicsIntegrator
 from ..microbiology import MICAnalyzer, AssayTracker, StrainManager
-from ..world_model import WorldStateTracker, KnowledgeGraph, LearningLoop, KosmosEngine, HypothesisEngine
+from ..world_model import WorldStateTracker, KnowledgeGraph, LearningLoop, KosmosEngine, HypothesisEngine, WorldModelManager
 from ..agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, CheminformaticsAgent,
                                   ResistanceCriticAgent, LiteratureAgent)
 from ..molecule_design import MoleculeGenerator, PropertyOptimizer
@@ -21,7 +21,8 @@ logger = logging.getLogger('khukuri')
 class AMRDiscoveryWorkflow:
     """Complete AMR-focused autonomous discovery workflow with Kosmos-style capabilities"""
     
-    def __init__(self, openai_client=None, auto_update_db: bool = True):
+    def __init__(self, openai_client=None, auto_update_db: bool = True,
+                 project: str = "default", memory_dir: Optional[str] = None):
         # Auto-update databases
         if auto_update_db:
             self._update_databases()
@@ -41,12 +42,15 @@ class AMRDiscoveryWorkflow:
         self.assay_tracker = AssayTracker()
         self.strain_manager = StrainManager()
         
-        # World model (Kosmos-style)
-        self.world_state = WorldStateTracker()
-        self.knowledge_graph = KnowledgeGraph()
-        self.learning_loop = LearningLoop()
-        self.kosmos = KosmosEngine(self.world_state, self.knowledge_graph)
-        self.hypothesis_engine = HypothesisEngine(self.world_state, self.knowledge_graph)
+        # World model — persistent, unified, accumulates across sessions
+        self.wm = WorldModelManager(project=project, memory_dir=memory_dir)
+
+        # Backwards-compat shims so existing code using the old attributes still works
+        self.world_state      = self.wm.state
+        self.knowledge_graph  = self.wm.graph
+        self.learning_loop    = self.wm.learning
+        self.kosmos           = self.wm.kosmos
+        self.hypothesis_engine = self.wm.hypotheses
         
         # Agents
         self.agents = {
@@ -87,6 +91,13 @@ class AMRDiscoveryWorkflow:
                      n_compounds: int = 20, n_iterations: int = 3) -> Dict:
         """Run complete AMR discovery workflow"""
         logger.info(f"Starting AMR discovery for {pathogen}")
+
+        # Open a persistent run — restores previous knowledge automatically
+        self.wm.start_run(pathogen=pathogen, context={
+            "priority": priority,
+            "n_compounds": n_compounds,
+            "n_iterations": n_iterations,
+        })
         
         # 1. Initial observation (Kosmos-style)
         pathogen_info = self.pathogen_db.get_pathogen_info(pathogen)
@@ -95,14 +106,24 @@ class AMRDiscoveryWorkflow:
         # 2. Target identification
         targets = self._identify_targets(pathogen, priority)
         logger.info(f"Identified {len(targets)} targets")
+
+        # Register targets in world model
+        for t in targets:
+            self.wm.record_target(
+                t.get("target_id", t.get("name", "unknown")),
+                druggability=t.get("druggability", 0.5),
+                essentiality=t.get("essentiality", 0.5),
+                organism=pathogen,
+            )
         
         # 3. Resistance analysis
         resistance_profile = self._analyze_resistance(pathogen)
         logger.info(f"Resistance profile: {resistance_profile}")
+        self.wm.record_strain(pathogen, resistance_profile=resistance_profile)
         
         # 4. Generate hypotheses
         hypotheses = self.hypothesis_engine.generate_hypotheses({'pathogen': pathogen})
-        for hyp in hypotheses[:5]:  # Top 5
+        for hyp in hypotheses[:5]:
             self.world_state.add_hypothesis(
                 hyp['hypothesis'],
                 hyp.get('evidence_required', []),
@@ -121,7 +142,7 @@ class AMRDiscoveryWorkflow:
         for iteration in range(n_iterations):
             logger.info(f"Starting iteration {iteration + 1}/{n_iterations}")
             
-            # Kosmos reasoning
+            # Kosmos reasoning — now informed by accumulated past knowledge
             reasoning = self.kosmos.reason(
                 f"What compounds show promise against {pathogen}?",
                 {'pathogen': pathogen}
@@ -133,15 +154,27 @@ class AMRDiscoveryWorkflow:
                 n_compounds=n_compounds
             )
             iter_results['reasoning'] = reasoning
-            
             results['iterations'].append(iter_results)
-            self.learning_loop.next_iteration()
+
+            # Record iteration compounds into world model
+            for compound in iter_results.get('compounds', []):
+                self.wm.record_compound(
+                    compound.get('compound_id', f"COMP_{iteration}"),
+                    smiles=compound.get('smiles', ''),
+                    admet=compound.get('admet', {}),
+                    pincer_score=compound.get('pincer_score'),
+                    docking_score=compound.get('docking_score'),
+                )
         
         # 6. Final recommendations and report
         results['recommendations'] = self._generate_recommendations()
         results['world_state_summary'] = self.world_state.get_state_summary()
         results['kosmos_report'] = self.kosmos.generate_report()
         results['validated_hypotheses'] = len(self.world_state.get_validated_hypotheses())
+        results['world_model_summary'] = self.wm.get_summary()
+
+        # Close run — persists everything to disk
+        self.wm.end_run(results=results)
         
         logger.info("AMR discovery workflow completed")
         return results
@@ -231,6 +264,7 @@ class AMRDiscoveryWorkflow:
         return {
             'n_compounds': len(analyzed_compounds),
             'top_compounds': analyzed_compounds[:5],
+            'compounds': analyzed_compounds,
             'avg_resistance_score': sum(c['resistance_prediction']['resistance_probability'] 
                                        for c in analyzed_compounds) / len(analyzed_compounds)
         }
@@ -469,6 +503,16 @@ class AMRDiscoveryWorkflow:
                 'source': 'pincer_counter_evolution',
                 'sa_score': apex.get('synthesis', {}).get('sa_score'),
             })
+
+            # Persist to world model manager — survives across sessions
+            self.wm.record_pincer_result(
+                apex_smiles=smiles,
+                minimax_score=apex['minimax_score'],
+                n_threats=pincer_results.get('viable_threats_count', 0),
+                dead_zones=pincer_results.get('dead_zones_count', 0),
+                generations=pincer_results.get('generations_run', 0),
+                hgt_threats=pincer_results.get('hgt_threats_count', 0),
+            )
         
         return pincer_results
 
