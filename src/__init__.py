@@ -1,7 +1,7 @@
 """Khukuri Virtual Lab - AMR-Focused Drug Discovery Platform"""
 
-__version__ = "2.0.0"
-__author__ = "Khukuri Research Team"
+__version__ = "2.1.0"
+__author__ = "Sangeet Sharma"
 
 from .core import MolecularScorer, Validator, setup_logger
 from .target_discovery import NetworkAnalyzer, TargetRanker
@@ -13,50 +13,58 @@ from .admet import calculate_drug_likeness, predict_admet
 from .bioknowledge import ResistanceDatabase, PathogenDatabase, TargetProteinDB, DatabaseUpdater
 from .genomics import ResistanceGenomicsAnalyzer, MutationTracker, OmicsIntegrator
 from .microbiology import MICAnalyzer, AssayTracker, StrainManager
-from .world_model import WorldStateTracker, KnowledgeGraph, LearningLoop, KosmosEngine, HypothesisEngine
+
+# World model — persistent, unified
+from .world_model import (
+    WorldStateTracker, KnowledgeGraph, LearningLoop,
+    KosmosEngine, HypothesisEngine, WorldModelManager,
+)
+
+# Resistance — PINCER dual red team + fitness
+from .resistance import (
+    PincerEngine, MutationSpaceMapper, ViableMutant,
+    ThreatAwareFitnessFunction,
+    HGTMapper, TransferThreatCluster, make_pincer_with_hgt,
+)
+
+# Integrations — KeyBox + Numen
+from .integrations import (
+    KhukuriKeyBox, plug_keybox_into_pincer, create_mrsa_keybox, KEYBOX_AVAILABLE,
+    NumenRetriever, ThreatIndex, LiteratureIndex, CompoundMemory, KhukuriNumen,
+)
+
+# Agents
 from .agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, CheminformaticsAgent,
                                  ResistanceCriticAgent, LiteratureAgent)
 
 __all__ = [
     # Core
-    'MolecularScorer',
-    'Validator',
-    'setup_logger',
+    'MolecularScorer', 'Validator', 'setup_logger',
     # Target Discovery
-    'NetworkAnalyzer',
-    'TargetRanker',
+    'NetworkAnalyzer', 'TargetRanker',
     # Molecule Design
-    'MoleculeGenerator',
-    'PropertyOptimizer',
+    'MoleculeGenerator', 'PropertyOptimizer',
     # Docking
-    'VinaWrapper',
-    'BindingSiteDetector',
+    'VinaWrapper', 'BindingSiteDetector',
     # ADMET
-    'calculate_drug_likeness',
-    'predict_admet',
+    'calculate_drug_likeness', 'predict_admet',
     # Bio-Knowledge
-    'ResistanceDatabase',
-    'PathogenDatabase',
-    'TargetProteinDB',
-    'DatabaseUpdater',
+    'ResistanceDatabase', 'PathogenDatabase', 'TargetProteinDB', 'DatabaseUpdater',
     # Genomics
-    'ResistanceGenomicsAnalyzer',
-    'MutationTracker',
-    'OmicsIntegrator',
+    'ResistanceGenomicsAnalyzer', 'MutationTracker', 'OmicsIntegrator',
     # Microbiology
-    'MICAnalyzer',
-    'AssayTracker',
-    'StrainManager',
+    'MICAnalyzer', 'AssayTracker', 'StrainManager',
     # World Model
-    'WorldStateTracker',
-    'KnowledgeGraph',
-    'LearningLoop',
-    'KosmosEngine',
-    'HypothesisEngine',
+    'WorldStateTracker', 'KnowledgeGraph', 'LearningLoop',
+    'KosmosEngine', 'HypothesisEngine', 'WorldModelManager',
+    # Resistance / PINCER
+    'PincerEngine', 'MutationSpaceMapper', 'ViableMutant',
+    'ThreatAwareFitnessFunction',
+    'HGTMapper', 'TransferThreatCluster', 'make_pincer_with_hgt',
+    # Integrations
+    'KhukuriKeyBox', 'plug_keybox_into_pincer', 'create_mrsa_keybox', 'KEYBOX_AVAILABLE',
+    'NumenRetriever', 'ThreatIndex', 'LiteratureIndex', 'CompoundMemory', 'KhukuriNumen',
     # AMR Agents
-    'MicrobiologyAgent',
-    'GenomicsAgent',
-    'CheminformaticsAgent',
-    'ResistanceCriticAgent',
-    'LiteratureAgent',
+    'MicrobiologyAgent', 'GenomicsAgent', 'CheminformaticsAgent',
+    'ResistanceCriticAgent', 'LiteratureAgent',
 ]

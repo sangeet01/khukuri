@@ -21,8 +21,7 @@
     "blaKPC": {
       "type": "carbapenem",
       "organism": "K. pneumoniae",
-      "mechanism": "antibiotic_inactivation",
-      "source": "fallback"
+      "mechanism": "antibiotic_inactivation"
     },
     "blaOXA": {
       "type": "carbapenem",
@@ -111,8 +110,7 @@
     "qnrA": {
       "type": "fluoroquinolone",
       "organism": "Multiple",
-      "mechanism": "target_protection",
-      "source": "fallback"
+      "mechanism": "target_protection"
     },
     "qnrB": {
       "type": "fluoroquinolone",
@@ -123,14 +121,23 @@
     "mcr-1": {
       "type": "colistin",
       "organism": "E. coli",
-      "mechanism": "target_modification",
-      "source": "fallback"
+      "mechanism": "target_modification"
     },
     "mcr-2": {
       "type": "colistin",
       "organism": "E. coli",
       "mechanism": "target_modification",
       "source": "fallback"
+    },
+    "aph(3')-III": {
+      "type": "aminoglycoside",
+      "organism": "Multiple",
+      "mechanism": "antibiotic_inactivation"
+    },
+    "tet(X)": {
+      "type": "tetracycline",
+      "organism": "Multiple",
+      "mechanism": "antibiotic_inactivation"
     }
   },
   "mechanisms": {

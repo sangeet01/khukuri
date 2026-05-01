@@ -13,6 +13,7 @@ from ..molecule_design import MoleculeGenerator, PropertyOptimizer
 from ..docking import VinaWrapper, BindingSiteDetector, ReceptorPrep
 from ..admet import predict_admet
 from ..resistance import ResistancePredictor, EvolutionSimulator
+from ..integrations import KhukuriKeyBox, plug_keybox_into_pincer, KhukuriNumen
 from ..synthesis import RetroSynthesizer, RoutePlanner, calculate_sa_score
 
 logger = logging.getLogger('khukuri')
@@ -22,7 +23,9 @@ class AMRDiscoveryWorkflow:
     """Complete AMR-focused autonomous discovery workflow with Kosmos-style capabilities"""
     
     def __init__(self, openai_client=None, auto_update_db: bool = True,
-                 project: str = "default", memory_dir: Optional[str] = None):
+                 project: str = "default", memory_dir: Optional[str] = None,
+                 pdb_path: Optional[str] = None,
+                 binding_site_center: tuple = (0.0, 0.0, 0.0)):
         # Auto-update databases
         if auto_update_db:
             self._update_databases()
@@ -45,12 +48,23 @@ class AMRDiscoveryWorkflow:
         # World model — persistent, unified, accumulates across sessions
         self.wm = WorldModelManager(project=project, memory_dir=memory_dir)
 
-        # Backwards-compat shims so existing code using the old attributes still works
+        # Backwards-compat shims
         self.world_state      = self.wm.state
         self.knowledge_graph  = self.wm.graph
         self.learning_loop    = self.wm.learning
         self.kosmos           = self.wm.kosmos
         self.hypothesis_engine = self.wm.hypotheses
+
+        # Numen — retrieval across all 3 use cases, persists across sessions
+        self.numen = KhukuriNumen(project=project, memory_dir=memory_dir)
+
+        # KeyBox — voxel docking engine (optional, activates when PDB provided)
+        self.keybox = KhukuriKeyBox(
+            pdb_path=pdb_path,
+            binding_site_center=binding_site_center,
+        )
+        if self.keybox.is_ready:
+            logger.info(f"AMRDiscovery: KeyBox active, pocket loaded")
         
         # Agents
         self.agents = {
@@ -103,9 +117,21 @@ class AMRDiscoveryWorkflow:
         pathogen_info = self.pathogen_db.get_pathogen_info(pathogen)
         self.kosmos.observe('pathogen_selected', pathogen_info)
         
-        # 2. Target identification
+        # 2. Target identification — augmented by Numen literature mining
+        lit_results = self.numen.mine_literature(pathogen)
+        lit_targets = lit_results.get("candidate_targets", [])
+        if lit_targets:
+            logger.info(f"Numen literature mining found targets: {lit_targets}")
+
         targets = self._identify_targets(pathogen, priority)
-        logger.info(f"Identified {len(targets)} targets")
+        # Merge literature targets into identified targets
+        known_ids = {t.get("target_id", t.get("name", "")) for t in targets}
+        for lt in lit_targets:
+            if lt not in known_ids:
+                targets.append({"name": lt, "target_id": lt,
+                                 "source": "numen_literature",
+                                 "druggability": 0.5, "essentiality": 0.5})
+        logger.info(f"Identified {len(targets)} targets ({len(lit_targets)} from literature)")
 
         # Register targets in world model
         for t in targets:
@@ -156,15 +182,25 @@ class AMRDiscoveryWorkflow:
             iter_results['reasoning'] = reasoning
             results['iterations'].append(iter_results)
 
-            # Record iteration compounds into world model
+            # Record iteration compounds into world model and Numen
             for compound in iter_results.get('compounds', []):
+                smi = compound.get('smiles', '')
+                cid = compound.get('compound_id', f"COMP_{iteration}")
                 self.wm.record_compound(
-                    compound.get('compound_id', f"COMP_{iteration}"),
-                    smiles=compound.get('smiles', ''),
+                    cid,
+                    smiles=smi,
                     admet=compound.get('admet', {}),
                     pincer_score=compound.get('pincer_score'),
                     docking_score=compound.get('docking_score'),
                 )
+                if smi:
+                    self.numen.remember_compound(
+                        smi,
+                        compound_id=cid,
+                        pincer_score=compound.get('pincer_score'),
+                        docking_score=compound.get('docking_score'),
+                        admet=compound.get('admet', {}),
+                    )
         
         # 6. Final recommendations and report
         results['recommendations'] = self._generate_recommendations()
@@ -264,7 +300,6 @@ class AMRDiscoveryWorkflow:
         return {
             'n_compounds': len(analyzed_compounds),
             'top_compounds': analyzed_compounds[:5],
-            'compounds': analyzed_compounds,
             'avg_resistance_score': sum(c['resistance_prediction']['resistance_probability'] 
                                        for c in analyzed_compounds) / len(analyzed_compounds)
         }
@@ -446,7 +481,17 @@ class AMRDiscoveryWorkflow:
         
         if not seed_smiles:
             seed_smiles = ['c1ccccc1', 'c1ccncc1', 'c1ccoc1']
-        
+
+        # Enrich seeds with Numen compound memory — recall similar past winners
+        if len(self.numen.compounds) > 0:
+            for smi in seed_smiles[:3]:
+                similar = self.numen.recall_similar(smi, k=2)
+                for s in similar:
+                    prev_smi = s.get("smiles", "")
+                    if prev_smi and prev_smi not in seed_smiles:
+                        seed_smiles.append(prev_smi)
+            logger.info(f"PINCER: seed pool enriched to {len(seed_smiles)} via CompoundMemory")
+
         # 4. Run PINCER with Dual Red Team (Vertical + Horizontal)
         pincer_results = self.evolution_simulator.run_pincer(
             wild_type_seq=pocket_seq,
@@ -456,16 +501,25 @@ class AMRDiscoveryWorkflow:
             knowledge_graph=self.knowledge_graph,
             target_strain=pathogen
         )
-        
+
+        # Index threats in Numen for fast retrieval next run
+        if pincer_results.get('viable_threats'):
+            self.numen.index_threats(pincer_results['viable_threats'])
+
         # 5. End-to-End Orchestration: ADMET + Synthesis for Apex Candidate
         if pincer_results.get('apex_drug'):
             apex = pincer_results['apex_drug']
             smiles = apex['smiles']
-            
+
             # ADMET
             admet_props = predict_admet(smiles)
             apex['admet'] = admet_props
-            
+
+            # KeyBox docking score (if pocket loaded)
+            if self.keybox.is_ready:
+                apex['keybox_score'] = self.keybox.score(smiles)
+                logger.info(f"PINCER: KeyBox score for apex = {apex['keybox_score']:.4f}")
+
             # Synthesis
             try:
                 from rdkit import Chem
@@ -474,7 +528,7 @@ class AMRDiscoveryWorkflow:
                     retro_tree = self.retrosynthesizer.analyze(mol)
                     route_score = self.route_planner.score_route(retro_tree)
                     sa_score = calculate_sa_score(mol)
-                    
+
                     apex['synthesis'] = {
                         'retrosynthesis_tree': retro_tree,
                         'route_score': route_score,
@@ -484,6 +538,15 @@ class AMRDiscoveryWorkflow:
                     logger.info(f"PINCER Orchestration: Apex drug SA score: {sa_score:.2f}")
             except Exception as e:
                 logger.warning(f"Synthesis orchestration failed: {e}")
+
+            # Store apex in Numen CompoundMemory for future runs
+            self.numen.remember_compound(
+                smiles,
+                compound_id='PINCER_APEX',
+                pincer_score=apex.get('minimax_score'),
+                docking_score=apex.get('keybox_score'),
+                admet=apex.get('admet'),
+            )
             
             # Store in world state
             self.world_state.update_compound(

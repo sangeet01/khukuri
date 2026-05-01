@@ -8,6 +8,7 @@ from .pincer_engine import (
     PincerEngine, 
     MarkovMutationMatrix, 
     MutationSpaceMapper,
+    ViableMutant,
     encode_sequence,
     decode_sequence,
     bitwise_complement,
