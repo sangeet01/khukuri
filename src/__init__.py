@@ -1,6 +1,6 @@
 """Khukuri Virtual Lab - AMR-Focused Drug Discovery Platform"""
 
-__version__ = "2.1.0"
+__version__ = "3.0.0"
 __author__ = "Sangeet Sharma"
 
 from .core import MolecularScorer, Validator, setup_logger
