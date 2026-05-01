@@ -9,33 +9,27 @@ AI-powered drug discovery platform with the PINCER counter-evolution engine.
 ## Features
 
 ### Core Modules
-- **Target Discovery**: PPI network analysis, target ranking, literature mining
-- **Molecule Design**: AI-powered generation, property optimization, fragment-based design
-- **Molecular Docking**: AutoDock Vina integration, binding site detection, pose analysis
+- **Target Discovery**: PPI network analysis, target ranking, **LimitNumen literature mining**
+- **Molecule Design**: **linearscript grammar-guided generation**, property optimization
+- **Molecular Docking**: **KeyBox 11-channel voxel physics**, **Inverse Vector Field site detection** for docking and other applications
 - **ADMET Prediction**: Drug-likeness, toxicity, pharmacokinetics
 - **Resistance Prediction**: Multi-target strategies, evolution simulation
 - **Retrosynthesis**: Route planning, synthetic accessibility scoring
 
-### PINCER Counter-Evolution Engine (NEW)
-The PINCER algorithm models the pharmacological duel between antibiotics and
-bacterial resistance as a zero-sum minimax game:
+### PINCER Counter-Evolution Engine
+The Pincer algorithm models the pharmacological duel between antibiotics and bacterial resistance as a zero-sum minimax game:
 
-- **Markov Mutation Matrix**: 2-bit DNA encoding with transition/transversion bias
-  for biologically accurate mutation prediction
-- **Mutation Space Mapper (Red Team)**: Enumerates all viable receptor mutations
-  within the finite biological hard ceiling
-- **Darwin-Godel Loop (Blue Team)**: Evolves drug candidates via constrained
-  evolution, optimizing worst-case binding across the full mutation cluster
-- **Dead Zone Index**: O(1) content-addressable tracking of explored chemical
-  space to prevent redundant computation
-- **Minimax Fitness**: Drugs are scored by their weakest binding across all
-  viable mutations -- the Skeleton Key objective
+- **Dual-Threat Red Team**: Maps both vertical **Markov Mutation Matrices** (2-bit DNA encoding with transition bias) and **Horizontal Gene Transfer (HGT)** resistance networks.
+- **Mutation Space Mapper**: Enumerates all viable receptor mutations within the finite biological hard ceiling.
+- **Darwin-Godel Loop (Blue Team)**: Evolves drug candidates via grammar-safe mutations, optimizing worst-case binding across the full mutation cluster.
+- **ThreatIndex & Dead Zone**: O(1) LimitNumen vector retrieval for fast threat evaluation and content-addressable space tracking.
+- **Minimax Fitness**: Drugs are scored by their weakest binding across all viable mutations -- the **Skeleton Key** objective.
 
 ### AMR-Specific Features
 - **Bio-Knowledge Layer**: CARD/ResFinder/MEGARes integration, pathogen database, target proteins
 - **Genomics Analysis**: Resistance mutations, evolution prediction, multi-omics integration
 - **Microbiology Tools**: MIC analysis, assay tracking, strain management
-- **World Model**: Kosmos-style state tracking, knowledge graph, learning loop
+- **Persistent World Model**: Accumulates intelligence (compounds, targets, hypotheses) seamlessly across sessions.
 - **Specialized Agents**: Microbiology, Genomics, Cheminformatics, Resistance Critic, Literature
 
 ## Quick Start
@@ -79,6 +73,7 @@ khukuri/
 |   |   +-- multi_target.py       # Combination strategies
 |   |-- synthesis/         # Retrosynthesis, SA scoring
 |   |-- agents/            # AI agents, orchestrator
+|   |-- integrations/      # KeyBox Bridge, LimitNumen Index
 |   |-- world_model/       # Kosmos engine, knowledge graph
 |   +-- workflows/         # End-to-end pipelines (AMR discovery)
 |-- tests/                 # Test suite
@@ -89,7 +84,7 @@ khukuri/
 
 ## Usage Examples
 
-### PINCER Counter-Evolution (NEW)
+### PINCER Counter-Evolution
 
 ```python
 from src.resistance import PincerEngine
@@ -113,23 +108,27 @@ results = pincer.get_results()
 print(f"Top 5 candidates: {[c['smiles'] for c in results['top_5']]}")
 ```
 
-### AMR Discovery (with PINCER)
+### AMR Discovery (with KeyBox, Numen & PINCER)
 
 ```python
-from src.workflows import run_amr_discovery
+from src.workflows import AMRDiscoveryWorkflow
 
-# Run AMR-focused discovery -- PINCER runs automatically
-results = run_amr_discovery(
-    pathogen="Mycobacterium tuberculosis",
+# Run AMR-focused discovery -- KeyBox, Numen, and PINCER run automatically
+workflow = AMRDiscoveryWorkflow(
+    pdb_path="PBP2a_2OLV.pdb", # KeyBox auto-detects the binding site via field physics
+    project="mrsa_run_01"      # Persistent world model remembers past runs
+)
+
+results = workflow.run_discovery(
+    pathogen="Staphylococcus aureus MRSA",
     priority="critical",
     n_compounds=20,
     n_iterations=3
 )
 
-print(f"Targets: {results['targets']}")
-print(f"PINCER threats mapped: {results['pincer_analysis']['viable_threats_count']}")
-print(f"Apex drug: {results['pincer_analysis']['apex_drug']}")
-print(f"Recommendations: {results['recommendations']}")
+print(f"Targets Identified: {len(results['targets'])}")
+print(f"Numen Literature Targets: {[t['name'] for t in results['targets'] if t.get('source') == 'numen_literature']}")
+print(f"Apex drug: {results['iterations'][-1]['top_compounds'][0]['smiles']}")
 ```
 
 ### Traditional Discovery
@@ -201,6 +200,7 @@ print(f"Viable mutants: {len(viable)}")
 - RDKit >= 2022.09.1
 - NetworkX >= 2.6.0
 - BioPython >= 1.79
+- linearscript >= 3.0.1
 - NumPy, Pandas, SciPy
 - PyYAML >= 6.0
 - Requests >= 2.26.0
@@ -211,33 +211,32 @@ print(f"Viable mutants: {len(viable)}")
 
 The PINCER algorithm operates as the evolutionary core of the Khukuri platform:
 
-```
-Target Side (Red Team):                    Solution Side (Blue Team):
-  Wild-Type Receptor DNA                     Seed Drug Molecules (SMILES)
-    |                                          |
-    v                                          v
-  Markov Mutation Engine                     Darwin-Godel Evolutionary Loop
-  (2-bit, transition bias)                   (grammar-safe molecular mutations)
-    |                                          |
-    v                                          v
-  Predicted Mutation Cluster                 Candidate Population
-    |                                          |
-    v                                          v
-  Folding Energy Filter                      Minimax Fitness Evaluation
-  (lethality cliff)                          (worst-case binding across threats)
-    |                                          |
-    v                                          v
-  Viable Threat Cluster -----> Godel Proof Validator <----- Dead Zone Check
-    |                              |
-    v                              v
-  LimitNumen Vector Index      Apex Skeleton Key s*
-                                   |
-                                   v
-                               KHUKURI Orchestrator
-                               (ADMET / Synthesis / MATP)
-                                   |
-                                   v
-                               Optimized Lab Candidate
+```text
+Literature Mining (Numen) ──→ Target Discovery
+         ↓
+    Red Team (PINCER)                      Solution Side (Blue Team):
+      |-- Vertical Mutation Matrix           Seed Drugs (Numen CompoundMemory)
+      |-- Horizontal Gene Transfer Mapper      |
+         ↓                                     v
+    Threat Index (Numen) ──→ Fast retrieval ──→ Darwin-Godel Evolutionary Loop
+         ↓                                     (SCRIPT grammar-safe mutations)
+    Viable Threat Cluster                      |
+         |                                     v
+         |                               Candidate Population
+         |                                     |
+         +------------------------------------ v
+                                  Minimax Fitness Evaluation
+                                  (KeyBox Voxel Physics Docking)
+                                               |
+                                               v
+     Dead Zone Check <-------------- Apex Skeleton Key s*
+                                               |
+                                               v
+                                   World Model Persistence
+                                  (ADMET / Synthesis / MATP)
+                                               |
+                                               v
+                                     Optimized Lab Candidate
 ```
 
 ## Status
