@@ -7,7 +7,7 @@
 
 <p align="center">
   <strong>Closed-loop autonomous drug discovery for antimicrobial resistance.</strong><br/>
-  One day. Any bacteria. Any mutated receptor.
+  Any bacteria. Any mutated receptor.
 </p>
 
 <p align="center">
