@@ -33,6 +33,12 @@ from .integrations import (
     NumenRetriever, ThreatIndex, LiteratureIndex, CompoundMemory, KhukuriNumen,
 )
 
+# Watchdog — continuous monitoring
+from .watchdog import (
+    SystemHealthWatchdog, ScientificHealthWatchdog, DrugResistanceSentinel,
+    HealthReport, ComponentHealth, ScienceHealthReport, ResistanceAlert,
+)
+
 # Agents
 from .agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, CheminformaticsAgent,
                                  ResistanceCriticAgent, LiteratureAgent)
@@ -67,4 +73,7 @@ __all__ = [
     # AMR Agents
     'MicrobiologyAgent', 'GenomicsAgent', 'CheminformaticsAgent',
     'ResistanceCriticAgent', 'LiteratureAgent',
+    # Watchdog
+    'SystemHealthWatchdog', 'ScientificHealthWatchdog', 'DrugResistanceSentinel',
+    'HealthReport', 'ComponentHealth', 'ScienceHealthReport', 'ResistanceAlert',
 ]

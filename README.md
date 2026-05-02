@@ -215,6 +215,40 @@ Five components: `WorldStateTracker`, `KnowledgeGraph`, `HypothesisEngine`, `Lea
 
 ---
 
+## Watchdog System
+
+A three-tier monitoring system that ensures Khukuri remains healthy, scientifically rigourous, and clinically relevant:
+
+**1. System Health**
+Monitors that all modules, engines (KeyBox), and indexes (Numen) are alive and uncorrupted.
+```python
+from src.watchdog import SystemHealthWatchdog
+report = SystemHealthWatchdog().check(raise_on_critical=True)
+report.print_summary()
+```
+
+**2. Scientific Health**
+Monitors PINCER runs in real-time. Detects stagnation, diversity loss, and exploration dead-zones.
+```python
+from src.watchdog import ScientificHealthWatchdog
+watchdog = ScientificHealthWatchdog()
+# Attach to Pincer
+apex = pincer.evolve(seeds, callback=watchdog.make_callback())
+report = watchdog.finalise()
+```
+
+**3. Drug Resistance Sentinel**
+Continuously monitors deployed antibiotics against the live resistance landscape. Flags when a drug (e.g., Vancomycin) is losing ground and recommends PINCER-generated replacements.
+```python
+from src.watchdog import DrugResistanceSentinel
+sentinel = DrugResistanceSentinel(project="mrsa_surveillance")
+sentinel.load_threats_from_pincer(pincer_engine)
+alerts = sentinel.run_surveillance()
+sentinel.print_dashboard()
+```
+
+---
+
 ## Quick Start
 
 ### Installation
@@ -299,8 +333,7 @@ khukuri/
 │   ├── world_model/        # Persistent state, knowledge graph, hypotheses
 │   │   └── manager.py              # WorldModelManager — unified interface
 │   ├── integrations/       # KeyBox bridge, Numen index
-│   │   ├── keybox_bridge.py        # KhukuriKeyBox, auto active site detection
-│   │   └── numen_index.py          # ThreatIndex, LiteratureIndex, CompoundMemory
+│   ├── watchdog/           # System, Science, and Drug Sentinel watchdogs
 │   ├── agents/             # Multi-agent system, PI agent, peer debate
 │   └── workflows/          # AMRDiscoveryWorkflow, autonomous discovery
 ├── tests/
@@ -379,7 +412,7 @@ This project began with a hospital visit — I read a resistance report of a one
 
 That report is why Khukuri exists.
 
-**Claude (Anthropic)** — engineering partner throughout development: wiring architecture, handling large codebases, bridging theory to implementation. If I am the architect with the vision, Claude is the engineer who closed the gaps.
+**Claude (by Anthropic)** — engineering partner throughout development: wiring architecture, handling large codebases, bridging theory to implementation. If I am the architect with the vision, Claude is the engineer who closed the gaps.
 
 **Stanford Zou Group** — their virtual lab paper that started the translation.
 
