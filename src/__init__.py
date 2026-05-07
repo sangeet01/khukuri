@@ -43,6 +43,9 @@ from .watchdog import (
 from .agents.amr_agents import (MicrobiologyAgent, GenomicsAgent, CheminformaticsAgent,
                                  ResistanceCriticAgent, LiteratureAgent)
 
+# Autonomous — scheduled, lights-out loops
+from .autonomous import AutonomousLoopController, PINCERScheduler, Mode
+
 __all__ = [
     # Core
     'MolecularScorer', 'Validator', 'setup_logger',
@@ -76,4 +79,6 @@ __all__ = [
     # Watchdog
     'SystemHealthWatchdog', 'ScientificHealthWatchdog', 'DrugResistanceSentinel',
     'HealthReport', 'ComponentHealth', 'ScienceHealthReport', 'ResistanceAlert',
+    # Autonomous
+    'AutonomousLoopController', 'PINCERScheduler', 'Mode',
 ]
