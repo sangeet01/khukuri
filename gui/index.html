@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Khukuri — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0c0f;
+  --bg2:       #0f1318;
+  --bg3:       #141920;
+  --border:    #1e2730;
+  --border2:   #253040;
+  --amber:     #f5a623;
+  --amber-dim: #8a5d12;
+  --green:     #39d98a;
+  --green-dim: #1a6640;
+  --red:       #ff4d4d;
+  --red-dim:   #7a1f1f;
+  --yellow:    #ffd166;
+  --blue:      #4da6ff;
+  --text:      #c8d6e5;
+  --text-dim:  #5a7080;
+  --mono:      'Share Tech Mono', monospace;
+  --sans:      'Barlow', sans-serif;
+  --cond:      'Barlow Condensed', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  border: 2px solid var(--amber);
+  transform: rotate(45deg);
+  position: relative;
+  flex-shrink: 0;
+}
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: var(--amber);
+  opacity: 0.3;
+}
+
+.logo-text {
+  font-family: var(--cond);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mode-toggle {
+  display: flex;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: 6px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-btn.active {
+  background: var(--amber);
+  color: var(--bg);
+  font-weight: 700;
+}
+.mode-btn:hover:not(.active) {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.run-btn {
+  padding: 7px 20px;
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.run-btn:hover {
+  background: var(--green);
+  color: var(--bg);
+}
+.run-btn.running {
+  color: var(--amber);
+  border-color: var(--amber);
+  animation: pulse-border 1s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(245,166,35,0); }
+}
+
+.clock {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* ─── MAIN LAYOUT ─────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: auto 1fr;
+  height: calc(100vh - 57px);
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  grid-row: 1 / 3;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg2);
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: var(--bg); }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Status metrics */
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 2px;
+}
+
+.metric-val {
+  font-family: var(--mono);
+  font-size: 22px;
+  color: var(--amber);
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* Threat bar */
+.threat-bar {
+  margin-top: 8px;
+}
+
+.threat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.threat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.threat-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.threat-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.5s ease;
+}
+
+.threat-fill.mutation { background: var(--amber); }
+.threat-fill.hgt      { background: var(--red); }
+
+.threat-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 30px;
+  text-align: right;
+}
+
+/* Nav items */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.1s;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--bg3); }
+.nav-item.active { background: var(--bg3); border-left: 2px solid var(--amber); }
+
+.nav-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.nav-item.active .nav-dot { background: var(--amber); }
+
+.nav-label {
+  font-family: var(--cond);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.nav-item.active .nav-label { color: var(--text); }
+
+/* ─── CONTENT AREA ────────────────────────────────────────── */
+.content {
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--bg);
+}
+
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-track { background: var(--bg); }
+.content::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ─── PANELS ──────────────────────────────────────────────── */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.panel-title {
+  font-family: var(--cond);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.panel-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 1px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+}
+
+.panel-body {
+  padding: 14px;
+}
+
+/* ─── DRUG SENTINEL GRID ──────────────────────────────────── */
+.drug-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.drug-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  transition: border-color 0.2s;
+}
+
+.drug-row:hover { border-color: var(--border2); }
+
+.drug-status {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-GREEN  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+.status-YELLOW { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+.status-RED    { background: var(--red);    box-shadow: 0 0 8px var(--red); animation: blink 1.5s infinite; }
+.status-BLACK  { background: #666;          border: 1px solid #999; }
+.status-UNSEEN { background: var(--text-dim); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.drug-name {
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.drug-class {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 2px 6px;
+  background: var(--bg);
+  border-radius: 1px;
+}
+
+.drug-score {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--amber);
+  width: 52px;
+  text-align: right;
+}
+
+.drug-delta {
+  font-family: var(--mono);
+  font-size: 10px;
+  width: 44px;
+  text-align: right;
+}
+
+.delta-up   { color: var(--green); }
+.delta-down { color: var(--red); }
+.delta-flat { color: var(--text-dim); }
+
+/* ─── COMPOUND TABLE ──────────────────────────────────────── */
+.compound-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.compound-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compound-table td {
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.compound-table tr:last-child td { border-bottom: none; }
+.compound-table tr:hover td { background: var(--bg3); }
+
+.smiles-cell {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--blue);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 60px;
+}
+
+.score-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+}
+
+.score-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber);
+  width: 36px;
+}
+
+/* ─── HEALTH CHECKLIST ────────────────────────────────────── */
+.health-list {
+  display: grid;
+  gap: 6px;
+}
+
+.health-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border-radius: 2px;
+  border-left: 2px solid transparent;
+}
+
+.health-item.ok     { border-left-color: var(--green); }
+.health-item.warn   { border-left-color: var(--yellow); }
+.health-item.fail   { border-left-color: var(--red); }
+
+.health-icon {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+}
+
+.health-name {
+  font-family: var(--cond);
+  font-size: 12px;
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.health-msg {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.health-latency {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* ─── HYPOTHESIS LIST ─────────────────────────────────────── */
+.hyp-list { display: grid; gap: 8px; }
+
+.hyp-item {
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.hyp-text {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.hyp-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.conf-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.conf-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 2px;
+}
+
+.conf-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--blue);
+}
+
+/* ─── RUN HISTORY ─────────────────────────────────────────── */
+.run-list { display: grid; gap: 6px; }
+
+.run-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.run-id   { color: var(--amber); flex: 1; }
+.run-status-ok   { color: var(--green); }
+.run-status-fail { color: var(--red); }
+.run-time { color: var(--text-dim); }
+
+/* ─── ESCALATION ALERTS ───────────────────────────────────── */
+.alert-list { display: grid; gap: 8px; }
+
+.alert-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+}
+
+.alert-critical { background: rgba(255,77,77,0.08); border-color: var(--red-dim); }
+.alert-urgent   { background: rgba(255,209,102,0.06); border-color: #6a5010; }
+.alert-warning  { background: rgba(245,166,35,0.06); border-color: var(--amber-dim); }
+.alert-info     { background: var(--bg3); border-color: var(--border); }
+
+.alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.alert-body { flex: 1; }
+.alert-trigger { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
+.alert-msg { font-size: 12px; color: var(--text); line-height: 1.4; }
+.alert-time { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+/* ─── EMPTY STATE ─────────────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ─── LOADING ─────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.spinner {
+  width: 12px; height: 12px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── RUN MODAL ───────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 24px;
+  width: 400px;
+  border-radius: 2px;
+}
+
+.modal-title {
+  font-family: var(--cond);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 20px;
+}
+
+.form-group { margin-bottom: 16px; }
+
+.form-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  border-radius: 2px;
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--amber);
+}
+
+.form-select option { background: var(--bg3); }
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 9px;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.btn-secondary {
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--cond);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.btn-secondary:hover { color: var(--text); border-color: var(--text); }
+
+/* ─── TOAST ───────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 10px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  font-family: var(--mono);
+  font-size: 11px;
+  border-radius: 2px;
+  animation: slide-in 0.2s ease;
+  border-left: 3px solid var(--amber);
+}
+
+.toast.success { border-left-color: var(--green); }
+.toast.error   { border-left-color: var(--red); }
+
+@keyframes slide-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div>
+      <div class="logo-text">Khukuri</div>
+      <div class="logo-sub">AMR Discovery Platform</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-supervised" onclick="setMode('supervised')">SUPERVISED</button>
+      <button class="mode-btn" id="btn-lights_out" onclick="setMode('lights_out')">LIGHTS OUT</button>
+    </div>
+    <button class="run-btn" id="run-btn" onclick="openRunModal()">▶ RUN</button>
+    <div class="clock" id="clock"></div>
+  </div>
+</header>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- System metrics -->
+    <div class="sidebar-section">
+      <div class="section-label">System State</div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-val" id="m-compounds">—</div>
+          <div class="metric-label">Compounds</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="m-targets">—</div>
+          <div class="metric-label">Targets</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="m-hypotheses">—</div>
+          <div class="metric-label">Hypotheses</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="m-runs">—</div>
+          <div class="metric-label">Runs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threat landscape -->
+    <div class="sidebar-section">
+      <div class="section-label">Threat Landscape</div>
+      <div class="threat-bar">
+        <div class="threat-row">
+          <span class="threat-label">Mutational</span>
+          <div class="threat-track">
+            <div class="threat-fill mutation" id="threat-mut-bar" style="width:0%"></div>
+          </div>
+          <span class="threat-count" id="threat-mut-count">—</span>
+        </div>
+        <div class="threat-row">
+          <span class="threat-label">HGT</span>
+          <div class="threat-track">
+            <div class="threat-fill hgt" id="threat-hgt-bar" style="width:0%"></div>
+          </div>
+          <span class="threat-count" id="threat-hgt-count">—</span>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="section-label" style="margin-bottom:6px">Top HGT Genes</div>
+        <div id="hgt-genes"></div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="sidebar-section">
+      <div class="section-label">Views</div>
+      <div class="nav-item active" onclick="showView('sentinel')" id="nav-sentinel">
+        <div class="nav-dot"></div>
+        <span class="nav-label">Drug Sentinel</span>
+      </div>
+      <div class="nav-item" onclick="showView('compounds')" id="nav-compounds">
+        <div class="nav-dot"></div>
+        <span class="nav-label">Compound Library</span>
+      </div>
+      <div class="nav-item" onclick="showView('health')" id="nav-health">
+        <div class="nav-dot"></div>
+        <span class="nav-label">System Health</span>
+      </div>
+      <div class="nav-item" onclick="showView('hypotheses')" id="nav-hypotheses">
+        <div class="nav-dot"></div>
+        <span class="nav-label">Hypotheses</span>
+      </div>
+      <div class="nav-item" onclick="showView('runs')" id="nav-runs">
+        <div class="nav-dot"></div>
+        <span class="nav-label">Run History</span>
+      </div>
+      <div class="nav-item" onclick="showView('alerts')" id="nav-alerts">
+        <div class="nav-dot"></div>
+        <span class="nav-label">Escalations</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main class="content" id="main-content">
+    <div class="loading"><div class="spinner"></div> Loading Khukuri data...</div>
+  </main>
+
+</div>
+
+<!-- Run modal -->
+<div class="modal-overlay" id="run-modal">
+  <div class="modal">
+    <div class="modal-title">New Discovery Run</div>
+    <div class="form-group">
+      <label class="form-label">Target Pathogen</label>
+      <input class="form-input" id="run-pathogen" value="S. aureus MRSA" placeholder="e.g. S. aureus MRSA"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Scaffold Focus</label>
+      <select class="form-select" id="run-scaffold">
+        <option value="quinolone">Quinolone</option>
+        <option value="oxazolidinone">Oxazolidinone</option>
+        <option value="sulfonamide">Sulfonamide</option>
+        <option value="benzimidazole">Benzimidazole</option>
+        <option value="">Auto (diverse)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mode</label>
+      <select class="form-select" id="run-mode">
+        <option value="supervised">Supervised</option>
+        <option value="lights_out">Lights Out</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="triggerRun()">Launch</button>
+      <button class="btn-secondary" onclick="closeRunModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const API = 'http://localhost:5000/api';
+let currentView = 'sentinel';
+let state = { mode: 'supervised', escalations: [] };
+
+// ─── Clock ───────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── API helpers ─────────────────────────────────────────────
+async function api(path) {
+  try {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error(r.statusText);
+    return r.json();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return r.json();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// ─── Status bar refresh ──────────────────────────────────────
+async function refreshStatus() {
+  const [status, threats] = await Promise.all([
+    api('/status'),
+    api('/pincer/threats'),
+  ]);
+
+  if (!status.error) {
+    document.getElementById('m-compounds').textContent  = status.compounds ?? '—';
+    document.getElementById('m-targets').textContent    = status.targets ?? '—';
+    document.getElementById('m-hypotheses').textContent = status.hypotheses ?? '—';
+    document.getElementById('m-runs').textContent       = status.runs_completed ?? '—';
+
+    // Sync mode buttons
+    ['supervised','lights_out'].forEach(m => {
+      document.getElementById('btn-' + m).classList.toggle('active', m === status.mode);
+    });
+    state.mode = status.mode;
+  }
+
+  if (!threats.error) {
+    const total = Math.max(threats.total, 1);
+    const mutPct = (threats.mutational_count / total * 100).toFixed(1);
+    const hgtPct = (threats.hgt_count / total * 100).toFixed(1);
+    document.getElementById('threat-mut-bar').style.width   = mutPct + '%';
+    document.getElementById('threat-hgt-bar').style.width   = hgtPct + '%';
+    document.getElementById('threat-mut-count').textContent = threats.mutational_count ?? '—';
+    document.getElementById('threat-hgt-count').textContent = threats.hgt_count ?? '—';
+
+    const genesEl = document.getElementById('hgt-genes');
+    if (threats.top_hgt_genes?.length) {
+      genesEl.innerHTML = threats.top_hgt_genes.map(g =>
+        `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--red)">${g.gene_id}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">${g.resistance_class}</span>
+        </div>`
+      ).join('');
+    }
+  }
+}
+
+// ─── Views ───────────────────────────────────────────────────
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + view)?.classList.add('active');
+  loadView(view);
+}
+
+async function loadView(view) {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div> Loading ${view}...</div>`;
+
+  switch(view) {
+    case 'sentinel':   await renderSentinel(el); break;
+    case 'compounds':  await renderCompounds(el); break;
+    case 'health':     await renderHealth(el); break;
+    case 'hypotheses': await renderHypotheses(el); break;
+    case 'runs':       await renderRuns(el); break;
+    case 'alerts':     renderAlerts(el); break;
+  }
+}
+
+// ─── Sentinel view ───────────────────────────────────────────
+async function renderSentinel(el) {
+  const data = await api('/sentinel');
+  if (data.error) { el.innerHTML = err(data.error); return; }
+
+  const statusMap = data.status || {};
+  const drugs = Object.entries(statusMap).map(([id, d]) => ({id, ...d}));
+  drugs.sort((a,b) => {
+    const order = {BLACK:0, RED:1, YELLOW:2, GREEN:3, UNSEEN:4};
+    return (order[a.alert]??5) - (order[b.alert]??5);
+  });
+
+  const alertCount = data.alerts?.length ?? 0;
+  const criticalCount = data.critical_drugs?.length ?? 0;
+
+  el.innerHTML = `
+    <div class="panel-grid">
+      <div class="panel" style="grid-column:1/-1">
+        <div class="panel-header">
+          <span class="panel-title">Drug Resistance Sentinel</span>
+          <div style="display:flex;gap:8px">
+            ${criticalCount > 0 ? `<span class="panel-badge" style="color:var(--red);border-color:var(--red-dim)">⛔ ${criticalCount} CRITICAL</span>` : ''}
+            <span class="panel-badge">${alertCount} alerts</span>
+            <span class="panel-badge">${drugs.length} monitored</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="drug-grid">
+            ${drugs.map(d => drugRow(d)).join('') || empty('No drugs monitored')}
+          </div>
+        </div>
+      </div>
+    </div>
+    ${alertCount > 0 ? `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Active Alerts</span>
+        <span class="panel-badge">${alertCount}</span>
+      </div>
+      <div class="panel-body">
+        <div class="alert-list">
+          ${(data.alerts||[]).map(a => alertItem(a)).join('')}
+        </div>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function drugRow(d) {
+  const score = d.score != null ? d.score.toFixed(4) : '—';
+  const delta = d.delta != null ? d.delta : null;
+  const deltaClass = delta == null ? 'delta-flat' : delta > 0 ? 'delta-up' : delta < 0 ? 'delta-down' : 'delta-flat';
+  const deltaStr = delta == null ? '—' : (delta > 0 ? '+' : '') + delta.toFixed(3);
+  const alert = d.alert || 'UNSEEN';
+  return `
+    <div class="drug-row">
+      <div class="drug-status status-${alert}"></div>
+      <span class="drug-name">${d.name || d.id}</span>
+      <span class="drug-class">${(d.drug_class||'').toUpperCase()}</span>
+      <span class="drug-score">${score}</span>
+      <span class="drug-delta ${deltaClass}">${deltaStr}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);width:56px;text-align:right">${alert}</span>
+    </div>
+  `;
+}
+
+// ─── Compounds view ──────────────────────────────────────────
+async function renderCompounds(el) {
+  const data = await api('/compounds?n=20');
+  if (data.error) { el.innerHTML = err(data.error); return; }
+
+  const compounds = data.compounds || [];
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Compound Library</span>
+        <span class="panel-badge">${compounds.length} compounds</span>
+      </div>
+      <div class="panel-body" style="overflow-x:auto">
+        ${compounds.length === 0 ? empty('No compounds yet — run a discovery cycle') : `
+        <table class="compound-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>SMILES</th>
+              <th>PINCER</th>
+              <th>KEYBOX</th>
+              <th>MW</th>
+              <th>LogP</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${compounds.map(c => compoundRow(c)).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    </div>
+  `;
+}
+
+function compoundRow(c) {
+  const score = c.pincer_score != null ? c.pincer_score : 0;
+  const kb = c.keybox_score != null ? c.keybox_score.toFixed(3) : '—';
+  const mw = c.admet?.mw != null ? c.admet.mw.toFixed(0) : '—';
+  const logp = c.admet?.logp != null ? c.admet.logp.toFixed(2) : '—';
+  return `
+    <tr>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--amber)">${(c.compound_id||'').slice(0,14)}</td>
+      <td class="smiles-cell" title="${c.smiles||''}">${c.smiles||'—'}</td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-fill" style="width:${(score*100).toFixed(0)}%"></div></div>
+          <span class="score-num">${score.toFixed(3)}</span>
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--blue)">${kb}</td>
+      <td style="font-family:var(--mono);font-size:11px">${mw}</td>
+      <td style="font-family:var(--mono);font-size:11px">${logp}</td>
+    </tr>
+  `;
+}
+
+// ─── Health view ─────────────────────────────────────────────
+async function renderHealth(el) {
+  const data = await api('/health');
+  if (data.error) { el.innerHTML = err(data.error); return; }
+
+  const components = data.components || [];
+  const overall = data.overall || 'unknown';
+  const overallColor = {healthy:'var(--green)',degraded:'var(--yellow)',critical:'var(--red)'}[overall] || 'var(--text-dim)';
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">System Health</span>
+        <span class="panel-badge" style="color:${overallColor};border-color:${overallColor}">${overall.toUpperCase()}</span>
+      </div>
+      <div class="panel-body">
+        <div class="health-list">
+          ${components.map(c => healthItem(c)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function healthItem(c) {
+  const cls = {ok:'ok', degraded:'warn', failed:'fail'}[c.status] || 'warn';
+  const icon = {ok:'✓', degraded:'~', failed:'✗'}[c.status] || '?';
+  return `
+    <div class="health-item ${cls}">
+      <span class="health-icon" style="color:${cls==='ok'?'var(--green)':cls==='warn'?'var(--yellow)':'var(--red)'}">${icon}</span>
+      <span class="health-name">${c.name}</span>
+      <span class="health-msg">${c.message||''}</span>
+      <span class="health-latency">${c.latency_ms?.toFixed(0)||'—'}ms</span>
+    </div>
+  `;
+}
+
+// ─── Hypotheses view ─────────────────────────────────────────
+async function renderHypotheses(el) {
+  const data = await api('/hypotheses');
+  if (data.error) { el.innerHTML = err(data.error); return; }
+
+  const hyps = data.hypotheses || [];
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Open Hypotheses</span>
+        <span class="panel-badge">${hyps.length}</span>
+      </div>
+      <div class="panel-body">
+        <div class="hyp-list">
+          ${hyps.length === 0 ? empty('No hypotheses yet') :
+            hyps.map(h => hypItem(h)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function hypItem(h) {
+  const hyp = h.hypothesis || h;
+  const text = hyp.hypothesis || JSON.stringify(hyp).slice(0,120);
+  const conf = hyp.confidence || 0;
+  return `
+    <div class="hyp-item">
+      <div class="hyp-text">${text}</div>
+      <div class="hyp-meta">
+        <div class="conf-bar"><div class="conf-fill" style="width:${(conf*100).toFixed(0)}%"></div></div>
+        <span class="conf-label">${(conf*100).toFixed(0)}% confidence</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Runs view ───────────────────────────────────────────────
+async function renderRuns(el) {
+  const data = await api('/runs');
+  if (data.error) { el.innerHTML = err(data.error); return; }
+
+  const runs = data.runs || [];
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Run History</span>
+        <span class="panel-badge">${runs.length} cycles</span>
+      </div>
+      <div class="panel-body">
+        <div class="run-list">
+          ${runs.length === 0 ? empty('No runs yet') :
+            runs.map(r => runItem(r)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function runItem(r) {
+  const statusCls = r.status === 'completed' ? 'run-status-ok' : 'run-status-fail';
+  return `
+    <div class="run-item">
+      <span class="run-id">${r.cycle_id||'—'}</span>
+      <span style="color:var(--text-dim)">${r.pathogen||'—'}</span>
+      <span class="${statusCls}">${r.status||'—'}</span>
+      <span class="run-time">${r.duration_s||'—'}s</span>
+      <span style="color:var(--text-dim)">${r.sentinel_alerts||0} alerts</span>
+    </div>
+  `;
+}
+
+// ─── Alerts view ─────────────────────────────────────────────
+function renderAlerts(el) {
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Escalation Log</span>
+        <span class="panel-badge">${state.escalations.length}</span>
+      </div>
+      <div class="panel-body">
+        <div class="alert-list">
+          ${state.escalations.length === 0 ? empty('No escalations') :
+            state.escalations.map(a => alertItem(a)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function alertItem(a) {
+  const cls = {critical:'alert-critical',urgent:'alert-urgent',warning:'alert-warning',info:'alert-info'}[a.severity] || 'alert-info';
+  const icon = {critical:'⛔',urgent:'🔴',warning:'⚠️',info:'ℹ️'}[a.severity] || '?';
+  return `
+    <div class="alert-item ${cls}">
+      <span class="alert-icon">${icon}</span>
+      <div class="alert-body">
+        <div class="alert-trigger">${a.trigger||''}</div>
+        <div class="alert-msg">${a.message||''}</div>
+        <div class="alert-time">${a.timestamp||''}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Mode switch ─────────────────────────────────────────────
+async function setMode(mode) {
+  const r = await apiPost('/mode', { mode });
+  if (r.error) { toast('Mode switch failed: ' + r.error, 'error'); return; }
+  state.mode = mode;
+  ['supervised','lights_out'].forEach(m => {
+    document.getElementById('btn-' + m).classList.toggle('active', m === mode);
+  });
+  toast(`Mode: ${mode.replace('_',' ').toUpperCase()}`, 'success');
+}
+
+// ─── Run modal ───────────────────────────────────────────────
+function openRunModal() {
+  document.getElementById('run-modal').classList.add('open');
+}
+function closeRunModal() {
+  document.getElementById('run-modal').classList.remove('open');
+}
+
+async function triggerRun() {
+  const pathogen = document.getElementById('run-pathogen').value;
+  const mode = document.getElementById('run-mode').value;
+  closeRunModal();
+
+  const btn = document.getElementById('run-btn');
+  btn.textContent = '⏳ RUNNING';
+  btn.classList.add('running');
+
+  const r = await apiPost('/run', { pathogen, mode });
+  if (r.error) {
+    toast('Run failed: ' + r.error, 'error');
+  } else {
+    toast(`Discovery run started: ${pathogen}`, 'success');
+    setTimeout(() => refreshStatus(), 3000);
+  }
+
+  setTimeout(() => {
+    btn.textContent = '▶ RUN';
+    btn.classList.remove('running');
+  }, 5000);
+}
+
+// ─── Toast ───────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────
+function empty(msg) {
+  return `<div class="empty">${msg}</div>`;
+}
+function err(msg) {
+  return `<div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--red)">
+    API Error — is the Khukuri server running?<br/><br/>
+    <span style="color:var(--text-dim)">${msg}</span><br/><br/>
+    <span style="color:var(--text-dim)">Start it with: python khukuri_api.py</span>
+  </div>`;
+}
+
+// ─── Init ────────────────────────────────────────────────────
+async function init() {
+  await refreshStatus();
+  await loadView('sentinel');
+  // Auto-refresh every 30s
+  setInterval(async () => {
+    await refreshStatus();
+    await loadView(currentView);
+  }, 30000);
+}
+
+init();
+</script>
+</body>
+</html>
+<!-- CHAT PANEL PATCH — append after </body> open tag -->
+<script>
+// ─── Chat Panel ──────────────────────────────────────────────
+(function() {
+
+// Inject chat styles
+const style = document.createElement('style');
+style.textContent = `
+.chat-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px; height: 48px;
+  background: var(--amber);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 400;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(245,166,35,0.3);
+}
+.chat-toggle:hover { transform: scale(1.05); }
+.chat-toggle.open { background: var(--bg3); border: 1px solid var(--border2); }
+
+.chat-panel {
+  position: fixed;
+  bottom: 84px; right: 24px;
+  width: 420px; height: 560px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  display: flex; flex-direction: column;
+  z-index: 400;
+  transform: translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.chat-panel.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+.chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  flex-shrink: 0;
+}
+
+.chat-title {
+  font-family: var(--cond);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--amber);
+}
+
+.chat-settings {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.api-input {
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 1px;
+  width: 140px;
+  outline: none;
+}
+.api-input:focus { border-color: var(--amber); }
+.api-input::placeholder { color: var(--text-dim); }
+
+.model-select {
+  padding: 4px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 1px;
+  outline: none;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: msg-in 0.15s ease;
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg.user { align-items: flex-end; }
+.msg.assistant { align-items: flex-start; }
+
+.msg-role {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.msg-bubble {
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msg.user .msg-bubble {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+
+.msg.assistant .msg-bubble {
+  background: rgba(245,166,35,0.06);
+  border: 1px solid var(--amber-dim);
+  color: var(--text);
+}
+
+.msg.assistant .msg-bubble strong { color: var(--amber); }
+.msg.assistant .msg-bubble code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 1px;
+  color: var(--blue);
+}
+
+.msg.system .msg-bubble {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  max-width: 100%;
+}
+
+.msg-typing {
+  display: flex; gap: 4px; align-items: center;
+  padding: 10px 12px;
+}
+.typing-dot {
+  width: 5px; height: 5px;
+  background: var(--amber);
+  border-radius: 50%;
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1); }
+}
+
+.chat-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  flex-shrink: 0;
+}
+
+.chat-suggestions {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-bottom: 8px;
+}
+
+.suggestion {
+  padding: 3px 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.suggestion:hover { border-color: var(--amber); color: var(--amber); }
+
+.chat-input-row {
+  display: flex; gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  border-radius: 2px;
+  outline: none;
+  resize: none;
+  height: 38px;
+  line-height: 1.4;
+}
+.chat-input:focus { border-color: var(--amber); }
+.chat-input::placeholder { color: var(--text-dim); }
+
+.chat-send {
+  padding: 8px 14px;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.chat-send:hover { opacity: 0.85; }
+.chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.web-search-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  display: flex; align-items: center; gap: 4px;
+  margin-bottom: 6px;
+}
+.web-search-badge.active { color: var(--green); }
+.web-search-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+`;
+document.head.appendChild(style);
+
+// Inject HTML
+const chatHTML = `
+<button class="chat-toggle" id="chat-toggle" onclick="toggleChat()" title="Ask Khukuri">🧬</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <span class="chat-title">Khukuri Intelligence</span>
+    <div class="chat-settings">
+      <select class="model-select" id="chat-model">
+        <option value="claude-sonnet-4-20250514">Claude Sonnet</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku</option>
+        <option value="gpt-4o-mini">GPT-4o mini</option>
+        <option value="gpt-4o">GPT-4o</option>
+      </select>
+      <input class="api-input" id="api-key-input"
+             type="password" placeholder="API key (optional)"/>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="msg system">
+      <div class="msg-bubble">KHUKURI INTELLIGENCE ONLINE
+Connected to: World Model · Sentinel · Threat Engine · Numen
+Web search available via MCP.
+
+Ask me anything about your discovery pipeline.</div>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <div class="web-search-badge" id="search-badge">
+      <div class="web-search-dot"></div>
+      WEB SEARCH READY
+    </div>
+    <div class="chat-suggestions" id="suggestions">
+      <span class="suggestion" onclick="suggest('Why is vancomycin RED?')">Why is vancomycin RED?</span>
+      <span class="suggestion" onclick="suggest('Best scaffold for next PINCER run?')">Next scaffold?</span>
+      <span class="suggestion" onclick="suggest('Search: new mecA variants 2026')">Search mecA 2026</span>
+      <span class="suggestion" onclick="suggest('Explain the HGT threat cluster')">HGT threats?</span>
+      <span class="suggestion" onclick="suggest('What should I prioritise today?')">Prioritise today</span>
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-input"
+                placeholder="Ask about your pipeline, search literature, analyse results..."
+                onkeydown="chatKeydown(event)" rows="1"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendMessage()">SEND</button>
+    </div>
+  </div>
+</div>
+`;
+document.body.insertAdjacentHTML('beforeend', chatHTML);
+
+// ─── Chat state ───────────────────────────────────────────────
+let chatOpen = false;
+let chatHistory = [];
+let isSending = false;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+  document.getElementById('chat-toggle').classList.toggle('open', chatOpen);
+  document.getElementById('chat-toggle').textContent = chatOpen ? '✕' : '🧬';
+  if (chatOpen) document.getElementById('chat-input').focus();
+}
+
+function suggest(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// ─── Build system context from Khukuri state ─────────────────
+async function buildContext() {
+  const [statusData, worldData, sentinelData, threatData] = await Promise.all([
+    fetch('http://localhost:5000/api/status').then(r=>r.json()).catch(()=>({})),
+    fetch('http://localhost:5000/api/world').then(r=>r.json()).catch(()=>({})),
+    fetch('http://localhost:5000/api/sentinel').then(r=>r.json()).catch(()=>({})),
+    fetch('http://localhost:5000/api/pincer/threats').then(r=>r.json()).catch(()=>({})),
+  ]);
+
+  const sentinel = sentinelData.status || {};
+  const critical = Object.entries(sentinel)
+    .filter(([,v]) => v.alert === 'RED' || v.alert === 'BLACK')
+    .map(([k,v]) => `${v.name||k}: ${v.alert} (score=${v.score?.toFixed(3)||'?'})`);
+
+  const top = worldData.top_compounds?.slice(0,5)
+    .map(c => `${c.compound_id}: pincer=${c.pincer_score?.toFixed(3)||'?'}`) || [];
+
+  return `You are Khukuri Intelligence — the reasoning core of an autonomous AMR drug discovery platform.
+
+CURRENT SYSTEM STATE:
+- Mode: ${statusData.mode || 'unknown'}
+- Project: ${statusData.project || 'default'}
+- Compounds discovered: ${statusData.compounds || 0}
+- Targets identified: ${statusData.targets || 0}
+- Runs completed: ${statusData.runs_completed || 0}
+
+SENTINEL DASHBOARD:
+${Object.entries(sentinel).map(([k,v]) =>
+  `- ${v.name||k}: ${v.alert||'UNSEEN'} (score=${v.score?.toFixed(3)||'?'}, delta=${v.delta?.toFixed(3)||'N/A'})`
+).join('\n') || '- No data'}
+
+CRITICAL ALERTS: ${critical.length > 0 ? critical.join(', ') : 'None'}
+
+THREAT LANDSCAPE:
+- Mutational threats: ${threatData.mutational_count || 0}
+- HGT threats: ${threatData.hgt_count || 0}
+- Total: ${threatData.total || 0}
+- Top HGT genes: ${(threatData.top_hgt_genes||[]).map(g=>g.gene_id).join(', ') || 'none'}
+
+TOP COMPOUNDS:
+${top.join('\n') || '- None yet'}
+
+OPEN HYPOTHESES: ${worldData.hypotheses?.length || 0}
+
+You have access to web search for current literature. When asked to search, include [SEARCH: query] in your response and the system will perform it.
+
+Be concise, scientific, and actionable. You understand PINCER, minimax evolution, HGT mechanisms, MRSA biology, and the full Khukuri architecture.`;
+}
+
+// ─── Send message ─────────────────────────────────────────────
+async function sendMessage() {
+  if (isSending) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  isSending = true;
+  document.getElementById('chat-send').disabled = true;
+
+  // Add user message
+  appendMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  // Typing indicator
+  const typingId = appendTyping();
+
+  try {
+    const systemPrompt = await buildContext();
+    const apiKey = document.getElementById('api-key-input').value.trim();
+    const model = document.getElementById('chat-model').value;
+
+    // Check if web search requested
+    const searchMatch = text.match(/search[:\s]+(.+)/i);
+    let searchResults = '';
+    if (searchMatch || text.toLowerCase().includes('search') || text.toLowerCase().includes('pubmed')) {
+      const query = searchMatch ? searchMatch[1] : text;
+      document.getElementById('search-badge').classList.add('active');
+      searchResults = await performWebSearch(query);
+      document.getElementById('search-badge').classList.remove('active');
+    }
+
+    const userContent = searchResults
+      ? `${text}\n\n[WEB SEARCH RESULTS for context:]\n${searchResults}`
+      : text;
+
+    const messages = [
+      ...chatHistory.slice(-8),  // keep last 8 turns for context
+      { role: 'user', content: userContent }
+    ];
+
+    let reply = '';
+
+    // Try Anthropic API first (works in browser via our proxy or direct)
+    if (model.startsWith('claude')) {
+      reply = await callAnthropic(model, systemPrompt, messages, apiKey);
+    } else {
+      reply = await callOpenAI(model, systemPrompt, messages, apiKey);
+    }
+
+    removeTyping(typingId);
+    appendMessage('assistant', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+
+  } catch (e) {
+    removeTyping(typingId);
+    appendMessage('assistant',
+      `Error: ${e.message}\n\nMake sure your API key is set and the model is available.\n\nYou can still use Khukuri's data — try asking without web search.`
+    );
+  }
+
+  isSending = false;
+  document.getElementById('chat-send').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+// ─── API calls ────────────────────────────────────────────────
+async function callAnthropic(model, system, messages, apiKey) {
+  // Route through our Flask backend to avoid CORS issues
+  const r = await fetch('http://localhost:5000/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, system, messages, api_key: apiKey }),
+  });
+  if (!r.ok) throw new Error(`API error: ${r.statusText}`);
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  return data.reply;
+}
+
+async function callOpenAI(model, system, messages, apiKey) {
+  const r = await fetch('http://localhost:5000/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, system, messages, api_key: apiKey }),
+  });
+  if (!r.ok) throw new Error(`API error: ${r.statusText}`);
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  return data.reply;
+}
+
+// ─── Web search via Numen ─────────────────────────────────────
+async function performWebSearch(query) {
+  try {
+    const r = await fetch('http://localhost:5000/api/search?q=' + encodeURIComponent(query));
+    const data = await r.json();
+    if (data.results?.length) {
+      return data.results.map(r =>
+        `Title: ${r.title}\nSnippet: ${r.snippet}`
+      ).join('\n\n');
+    }
+    return 'No results found.';
+  } catch (e) {
+    return `Search unavailable: ${e.message}`;
+  }
+}
+
+// ─── Message helpers ──────────────────────────────────────────
+function appendMessage(role, content) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const roleLabel = role === 'user' ? 'YOU' : 'KHUKURI';
+
+  // Basic markdown-ish formatting
+  const formatted = content
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  div.innerHTML = `
+    <span class="msg-role">${roleLabel}</span>
+    <div class="msg-bubble">${formatted}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const id = 'typing-' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg assistant';
+  div.innerHTML = `
+    <span class="msg-role">KHUKURI</span>
+    <div class="msg-bubble">
+      <div class="msg-typing">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  document.getElementById(id)?.remove();
+}
+
+})();
+</script>
