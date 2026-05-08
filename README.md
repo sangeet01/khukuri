@@ -13,7 +13,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-3.0.0-blue"/>
   <img src="https://img.shields.io/badge/python-3.8%2B-green"/>
-  <img src="https://img.shields.io/badge/license-MIT-orange"/>
+  <img src="https://img.shields.io/badge/license-Apache%20License%202.0-blue"/>
   <img src="https://img.shields.io/badge/status-research--grade-purple"/>
 </p>
 
@@ -336,6 +336,7 @@ khukuri/
 │   ├── watchdog/           # System, Science, and Drug Sentinel watchdogs
 │   ├── agents/             # Multi-agent system, PI agent, peer debate
 │   └── workflows/          # AMRDiscoveryWorkflow, autonomous discovery
+│   └── autonomous/         # Corn jobs and LLM integration for autonomous working
 ├── tests/
 ├── examples/
 │   └── pincer_example.py
@@ -419,6 +420,17 @@ That report is why Khukuri exists.
 **The AMR research community** — whose papers I devoured like a caterpillar.
 
 ---
+
+## License
+
+**Apache License 2.0 with Commons Clause** - Free for personal and research work. Commercial use requires permission.
+
+See [LICENSE](LICENSE) file for full details.
+
+**Note**: Research software. Not validated for regulatory submissions.
+
+---
+
 
 ## Citation
 
