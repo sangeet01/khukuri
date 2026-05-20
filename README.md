@@ -15,6 +15,8 @@
   <img src="https://img.shields.io/badge/python-3.8%2B-green"/>
   <img src="https://img.shields.io/badge/license-Apache%20License%202.0-blue"/>
   <img src="https://img.shields.io/badge/status-research--grade-purple"/>
+<img src="https://deepwiki.com/sangeet01/khukuri"/ >
+
 </p>
 
 ---
